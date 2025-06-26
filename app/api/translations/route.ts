@@ -2,10 +2,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 
-// GET - Read translation files
 export async function GET() {
   try {
-    // Updated paths to match your existing structure
     const uzPath = path.join(
       process.cwd(),
       "public/locales/uz/translation.json"
@@ -39,7 +37,6 @@ export async function GET() {
   }
 }
 
-// POST - Update translation files
 export async function POST(request: NextRequest) {
   try {
     const { translations } = await request.json();
@@ -54,16 +51,17 @@ export async function POST(request: NextRequest) {
       process.cwd(),
       "public/locales/uz/translation.json"
     );
+
     const ruPath = path.join(
       process.cwd(),
       "public/locales/ru/translation.json"
     );
 
-    // Ensure directories exist
+    
+
     await fs.mkdir(path.dirname(uzPath), { recursive: true });
     await fs.mkdir(path.dirname(ruPath), { recursive: true });
 
-    // Write files with proper formatting
     await Promise.all([
       fs.writeFile(uzPath, JSON.stringify(translations.uz, null, 2), "utf8"),
       fs.writeFile(ruPath, JSON.stringify(translations.ru, null, 2), "utf8"),
@@ -73,6 +71,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: "Translation files updated successfully",
     });
+
   } catch (error) {
     console.error("Error updating translation files:", error);
     return NextResponse.json(
