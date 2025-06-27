@@ -1,9 +1,10 @@
+"use client";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 export default function LocationAndContact() {
   const { t } = useTranslation();
-  const iframeRef = useRef(null);
+  const iframeRef = useRef<HTMLDivElement | null>(null);
   const [showMap, setShowMap] = useState(false);
 
   useEffect(() => {
@@ -33,39 +34,45 @@ export default function LocationAndContact() {
         <div className="flex flex-col md:flex-row md:space-x-12">
           {/* Left: Map */}
           <div
+            ref={iframeRef}
             className="md:w-3/5 w-full rounded-lg overflow-hidden mb-8 md:mb-0"
             style={{
               minHeight: "400px",
               border: "2px solid rgba(250, 204, 21, 0.2)",
               backgroundColor: "#1f1f1f",
+              position: "relative",
             }}
-            ref={iframeRef}
           >
-            {showMap ? (
-              <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2822.9356728397393!2d69.20105357567799!3d41.27323760306849!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x38ae8a39be5272f5%3A0x283b29f021a7a880!2sKorzinka%20%E2%80%94%20Bunyodkor!5e1!3m2!1sen!2s!4v1749979869227!5m2!1sen!2s"
-                width="100%"
-                height="400"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="eager"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            ) : (
+            {!showMap ? (
               <div
+                className="w-full h-full flex items-center justify-center animate-pulse"
                 style={{
-                  height: "100%",
-                  width: "100%",
                   backgroundColor: "#2d2d2d",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
                   color: "#aaa",
                   fontSize: "1rem",
+                  height: "400px",
                 }}
               >
                 {t("loading.map") || "Loading map..."}
               </div>
+            ) : (
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2822.9356728397393!2d69.20105357567799!3d41.27323760306849!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x38ae8a39be5272f5%3A0x283b29f021a7a880!2sKorzinka%20%E2%80%94%20Bunyodkor!5e1!3m2!1sen!2s!4v1749979869227!5m2!1sen!2s"
+                width="100%"
+                height="400"
+                style={{
+                  border: 0,
+                  display: "block",
+                  width: "100%",
+                  height: "100%",
+                  backgroundColor: "#1f1f1f",
+                  transition: "opacity 0.6s ease-in-out",
+                  opacity: showMap ? 1 : 0,
+                }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
             )}
           </div>
 

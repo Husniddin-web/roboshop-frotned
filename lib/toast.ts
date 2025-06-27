@@ -1,26 +1,26 @@
-import { toast } from "react-toastify"
+import { toast } from "react-toastify";
 
 export const showToast = {
   success: (message: string) => {
     toast.success(message, {
       position: "top-right",
-      autoClose: 3000,
+      autoClose: 1000,
       hideProgressBar: false,
       closeOnClick: true,
-      pauseOnHover: true,
+      pauseOnHover: false,
       draggable: true,
-    })
+    });
   },
 
   error: (message: string) => {
     toast.error(message, {
       position: "top-right",
-      autoClose: 4000,
+      autoClose: 2000,
       hideProgressBar: false,
       closeOnClick: true,
-      pauseOnHover: true,
+      pauseOnHover: false,
       draggable: true,
-    })
+    });
   },
 
   warning: (message: string) => {
@@ -31,7 +31,7 @@ export const showToast = {
       closeOnClick: true,
       pauseOnHover: true,
       draggable: true,
-    })
+    });
   },
 
   info: (message: string) => {
@@ -42,25 +42,29 @@ export const showToast = {
       closeOnClick: true,
       pauseOnHover: true,
       draggable: true,
-    })
+    });
   },
 
   loading: (message: string) => {
     return toast.loading(message, {
       position: "top-right",
-    })
+    });
   },
 
-  update: (toastId: any, type: "success" | "error" | "warning" | "info", message: string) => {
+  update: (
+    toastId: any,
+    type: "success" | "error" | "warning" | "info",
+    message: string
+  ) => {
     toast.update(toastId, {
       render: message,
       type,
       isLoading: false,
-      autoClose: 3000,
+      autoClose: 1000,
       hideProgressBar: false,
       closeOnClick: true,
-      pauseOnHover: true,
+      pauseOnHover: false,
       draggable: true,
-    })
+    });
   },
-}
+};
