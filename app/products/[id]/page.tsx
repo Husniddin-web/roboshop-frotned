@@ -71,6 +71,7 @@ export default function ProductDetailPage() {
           name: translation?.name || "Product",
           price: Number(product.price),
           image: product.images?.[0]?.url,
+          quantity,
         })
       );
     }
