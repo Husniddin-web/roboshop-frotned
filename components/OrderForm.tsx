@@ -151,7 +151,6 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
     formData.phoneNumber &&
     isValidUzbekPhoneNumber(formData.phoneNumber.slice(4)) &&
     formData.region &&
-    formData.address.trim() &&
     (formData.region !== "tashkent_city" || formData.district);
 
   const isDisabled = createOrderMutation.isPending || !isFormValid;
