@@ -144,7 +144,7 @@ const Header: React.FC = () => {
   return (
     <>
       <header
-        className="sticky top-0 z-50 border-b border-yellow-500/20 shadow-lg"
+        className="fixed top-0 left-0 right-0 z-50 border-b border-yellow-500/20 shadow-lg"
         style={{
           background: "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)",
         }}

@@ -68,12 +68,14 @@ export default function ProductsPage() {
       }}
     >
       <div>
-        <Header />
-        <main className="container px-4 py-6 relative">
+        <div className="mb-10">
+          <Header />
+        </div>
+        <main className="container px-4 py-6 relative ">
           <div className="flex flex-col lg:flex-row gap-6">
             <button
               onClick={() => setIsMobileFilterOpen(true)}
-              className="lg:hidden flex items-center gap-2 text-yellow-400 border border-yellow-400/40 px-3 py-2 rounded mb-4 transition-all duration-200 hover:bg-yellow-400/10"
+              className="lg:hidden flex items-center gap-2 text-yellow-400 border border-yellow-400/40 px-3 py-2 rounded mb-8 transition-all duration-200 hover:bg-yellow-400/10"
             >
               <Filter size={18} />
               {t("filters")}
