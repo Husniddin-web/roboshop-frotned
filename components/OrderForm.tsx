@@ -6,7 +6,7 @@ import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/lib/store";
 import { clearCart, setCartOpen } from "@/lib/features/cartSlice";
 import { useCreateOrder } from "@/lib/api";
-import { FiX } from "react-icons/fi";
+import { FiX, FiMapPin } from "react-icons/fi";
 import { showToast } from "@/lib/toast";
 import { isValidUzbekPhoneNumber } from "../lib/utils";
 import { useTranslation } from "react-i18next";
@@ -15,17 +15,99 @@ interface OrderFormProps {
   onClose: () => void;
 }
 
+const UZBEKISTAN_REGIONS = [
+  { value: "tashkent_city", label: "Toshkent shahri" },
+  { value: "tashkent_region", label: "Toshkent viloyati" },
+  { value: "andijan", label: "Andijon viloyati" },
+  { value: "bukhara", label: "Buxoro viloyati" },
+  { value: "fergana", label: "Farg'ona viloyati" },
+  { value: "jizzakh", label: "Jizzax viloyati" },
+  { value: "kashkadarya", label: "Qashqadaryo viloyati" },
+  { value: "khorezm", label: "Xorazm viloyati" },
+  { value: "namangan", label: "Namangan viloyati" },
+  { value: "navoi", label: "Navoiy viloyati" },
+  { value: "samarkand", label: "Samarqand viloyati" },
+  { value: "sirdarya", label: "Sirdaryo viloyati" },
+  { value: "surkhandarya", label: "Surxondaryo viloyati" },
+  { value: "karakalpakstan", label: "Qoraqalpog'iston Respublikasi" },
+];
+
+const TASHKENT_DISTRICTS = [
+  { value: "bektemir", label: "Bektemir tumani" },
+  { value: "chilanzar", label: "Chilonzor tumani" },
+  { value: "mirzo_ulugbek", label: "Mirzo Ulug'bek tumani" },
+  { value: "mirobod", label: "Mirobod tumani" },
+  { value: "sergeli", label: "Sergeli tumani" },
+  { value: "shayhantohur", label: "Shayhontohur tumani" },
+  { value: "uchtepa", label: "Uchtepa tumani" },
+  { value: "yunusobod", label: "Yunusobod tumani" },
+  { value: "yakkasaray", label: "Yakkasaray tumani" },
+  { value: "olmazar", label: "Olmazor tumani" },
+  { value: "yashnobod", label: "Yashnobod tumani" },
+];
+
 const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
   const [formData, setFormData] = useState({
     customer_name: "",
     phoneNumber: "",
     notes: "",
+    region: "",
+    district: "",
+    address: "",
+    location: "",
+    gps_coordinates: "",
   });
+
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
 
   const { items, total } = useSelector((state: RootState) => state.cart);
   const dispatch = useDispatch();
   const { t } = useTranslation();
   const createOrderMutation = useCreateOrder();
+
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      showToast.error("Geolocation is not supported by this browser");
+      return;
+    }
+
+    setIsGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setFormData({
+          ...formData,
+          gps_coordinates: `${latitude},${longitude}`,
+        });
+        setIsGettingLocation(false);
+        showToast.success("Location captured successfully");
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        setIsGettingLocation(false);
+        showToast.error("Failed to get location. Please try again.");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 600000,
+      }
+    );
+  };
+
+  const getCombinedAddress = () => {
+    const regionLabel =
+      UZBEKISTAN_REGIONS.find((r) => r.value === formData.region)?.label || "";
+    const districtLabel = formData.district
+      ? TASHKENT_DISTRICTS.find((d) => d.value === formData.district)?.label ||
+        ""
+      : "";
+
+    if (formData.region === "tashkent_city" && districtLabel) {
+      return `${regionLabel}, ${districtLabel}`;
+    }
+    return regionLabel;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,8 +115,17 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
     const orderToastId = showToast.loading(t("submitting.order"));
 
     try {
+      const combinedAddress = getCombinedAddress();
+      const fullAddress = formData.address.trim()
+        ? `${combinedAddress}, ${formData.address}`
+        : combinedAddress;
+
       const orderData = {
-        ...formData,
+        customer_name: formData.customer_name,
+        phoneNumber: formData.phoneNumber,
+        notes: formData.notes,
+        address: fullAddress,
+        location: formData.gps_coordinates,
         totalAmount: total,
         orderItems: items.map((item) => ({
           productId: item.id,
@@ -58,7 +149,10 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
   const isFormValid =
     formData.customer_name.trim() &&
     formData.phoneNumber &&
-    isValidUzbekPhoneNumber(formData.phoneNumber.slice(4));
+    isValidUzbekPhoneNumber(formData.phoneNumber.slice(4)) &&
+    formData.region &&
+    formData.address.trim() &&
+    (formData.region !== "tashkent_city" || formData.district);
 
   const isDisabled = createOrderMutation.isPending || !isFormValid;
 
@@ -125,6 +219,109 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
                 </small>
               )}
           </div>
+
+          {/* Region */}
+          <div>
+            <label className="block text-sm text-neutral-300 mb-1">
+              Viloyat/Shahar
+            </label>
+            <select
+              required
+              value={formData.region}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  region: e.target.value,
+                  district: "", // Reset district when region changes
+                })
+              }
+              className="w-full px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-white"
+            >
+              <option value="">Viloyatni tanlang</option>
+              {UZBEKISTAN_REGIONS.map((region) => (
+                <option key={region.value} value={region.value}>
+                  {region.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* District (only for Tashkent City) */}
+          {formData.region === "tashkent_city" && (
+            <div>
+              <label className="block text-sm text-neutral-300 mb-1">
+                Tuman
+              </label>
+              <select
+                required
+                value={formData.district}
+                onChange={(e) =>
+                  setFormData({ ...formData, district: e.target.value })
+                }
+                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-white"
+              >
+                <option value="">Tumanni tanlang</option>
+                {TASHKENT_DISTRICTS.map((district) => (
+                  <option key={district.value} value={district.value}>
+                    {district.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {formData.region === "tashkent_city" ? (
+            <div>
+              <label className="block text-sm text-neutral-300 mb-1">
+                To'liq manzil
+              </label>
+              <textarea
+                required
+                value={formData.address}
+                onChange={(e) =>
+                  setFormData({ ...formData, address: e.target.value })
+                }
+                rows={2}
+                placeholder="Ko'cha nomi, uy raqami, kvartira..."
+                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-md text-sm text-white resize-vertical focus:outline-none focus:ring-2 focus:ring-white placeholder:text-neutral-500"
+              />
+            </div>
+          ) : null}
+
+          {/* GPS Location */}
+          {formData.region === "tashkent_city" && (
+            <div>
+              <label className="block text-sm text-neutral-300 mb-1">
+                GPS Joylashuv (ixtiyoriy)
+              </label>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={formData.gps_coordinates}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      gps_coordinates: e.target.value,
+                    })
+                  }
+                  placeholder="41.2995,69.2401 yoki bosh qoldiring"
+                  className="flex-1 px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-white placeholder:text-neutral-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleGetLocation}
+                  disabled={isGettingLocation}
+                  className="px-4 py-3 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded-md text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  <FiMapPin size={16} />
+                  <span>{isGettingLocation ? "..." : "GPS"}</span>
+                </button>
+              </div>
+              <small className="text-neutral-500 text-xs mt-1 block">
+                Aniq joylashuvni olish uchun "GPS" tugmasini bosing
+              </small>
+            </div>
+          )}
 
           {/* Notes */}
           <div>
