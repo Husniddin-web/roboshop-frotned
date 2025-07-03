@@ -270,7 +270,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
             </div>
           )}
 
-          {formData.region === "tashkent_city" ? (
+          {formData.region != "tashkent_city" ? (
             <div>
               <label className="block text-sm text-neutral-300 mb-1">
                 To'liq manzil
