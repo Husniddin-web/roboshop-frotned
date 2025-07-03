@@ -1,4 +1,6 @@
 import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import "../styles/globals.css";
 
 export const showToast = {
   success: (message: string) => {
@@ -9,6 +11,8 @@ export const showToast = {
       closeOnClick: true,
       pauseOnHover: false,
       draggable: true,
+      theme: "colored",
+      className: "toast-success-yellow",
     });
   },
 
@@ -48,6 +52,7 @@ export const showToast = {
   loading: (message: string) => {
     return toast.loading(message, {
       position: "top-right",
+      // spinner color set globally in CSS
     });
   },
 
@@ -65,6 +70,7 @@ export const showToast = {
       closeOnClick: true,
       pauseOnHover: false,
       draggable: true,
+      className: type === "success" ? "toast-success-yellow" : "",
     });
   },
 };

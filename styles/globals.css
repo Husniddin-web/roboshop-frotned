@@ -95,3 +95,14 @@ a {
     @apply bg-background text-foreground;
   }
 }
+
+.toast-success-yellow {
+  background-color: #facc15 !important;
+  color: #000;
+
+  --toastify-icon-color-success: #22c55e;
+}
+
+.Toastify__toast--loading {
+  --toastify-spinner-color: #22c55e; /* green */
+}
