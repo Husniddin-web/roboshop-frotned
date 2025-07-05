@@ -186,9 +186,22 @@ export const getOrderStats = async () => {
   }
 };
 
-export const getOrders = async () => {
+interface UseOrdersParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+export const getOrders = async (param: UseOrdersParams) => {
   try {
-    const res = await instance.get(`/order`);
+    const { page = 1, limit = 10, search } = param;
+    const searchParams = new URLSearchParams();
+    searchParams.set("page", page.toString());
+    searchParams.set("limit", limit.toString());
+
+    if (search) {
+      searchParams.set("search", search);
+    }
+    const res = await instance.get(`/order/pagination?${searchParams}`);
     return res.data;
   } catch (error: any) {
     toast.error(`${error.response.data.message}`);

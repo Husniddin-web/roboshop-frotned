@@ -32,27 +32,12 @@ const UZBEKISTAN_REGIONS = [
   { value: "karakalpakstan", label: "Qoraqalpog'iston Respublikasi" },
 ];
 
-const TASHKENT_DISTRICTS = [
-  { value: "bektemir", label: "Bektemir tumani" },
-  { value: "chilanzar", label: "Chilonzor tumani" },
-  { value: "mirzo_ulugbek", label: "Mirzo Ulug'bek tumani" },
-  { value: "mirobod", label: "Mirobod tumani" },
-  { value: "sergeli", label: "Sergeli tumani" },
-  { value: "shayhantohur", label: "Shayhontohur tumani" },
-  { value: "uchtepa", label: "Uchtepa tumani" },
-  { value: "yunusobod", label: "Yunusobod tumani" },
-  { value: "yakkasaray", label: "Yakkasaray tumani" },
-  { value: "olmazar", label: "Olmazor tumani" },
-  { value: "yashnobod", label: "Yashnobod tumani" },
-];
-
 const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
   const [formData, setFormData] = useState({
     customer_name: "",
     phoneNumber: "",
     notes: "",
     region: "",
-    district: "",
     address: "",
     location: "",
     gps_coordinates: "",
@@ -98,14 +83,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
   const getCombinedAddress = () => {
     const regionLabel =
       UZBEKISTAN_REGIONS.find((r) => r.value === formData.region)?.label || "";
-    const districtLabel = formData.district
-      ? TASHKENT_DISTRICTS.find((d) => d.value === formData.district)?.label ||
-        ""
-      : "";
 
-    if (formData.region === "tashkent_city" && districtLabel) {
-      return `${regionLabel}, ${districtLabel}`;
-    }
     return regionLabel;
   };
 
@@ -150,8 +128,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
     formData.customer_name.trim() &&
     formData.phoneNumber &&
     isValidUzbekPhoneNumber(formData.phoneNumber.slice(4)) &&
-    formData.region &&
-    (formData.region !== "tashkent_city" || formData.district);
+    formData.region;
 
   const isDisabled = createOrderMutation.isPending || !isFormValid;
 
@@ -161,7 +138,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
       onClick={onClose}
     >
       <div
-        className="bg-neutral-900 text-neutral-100 border border-neutral-700 rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+        className="bg-neutral-900 text-neutral-100 border border-neutral-700 rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto scrollbar-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
@@ -208,7 +185,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
                   setFormData({ ...formData, phoneNumber: `+998${digits}` });
                 }}
                 className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder:text-neutral-500"
-                placeholder="901234567"
+                placeholder="XX XXX XX XX"
               />
             </div>
             {formData.phoneNumber.slice(4) &&
@@ -231,7 +208,6 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
                 setFormData({
                   ...formData,
                   region: e.target.value,
-                  district: "", // Reset district when region changes
                 })
               }
               className="w-full px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-white"
@@ -244,30 +220,6 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
               ))}
             </select>
           </div>
-
-          {/* District (only for Tashkent City) */}
-          {formData.region === "tashkent_city" && (
-            <div>
-              <label className="block text-sm text-neutral-300 mb-1">
-                Tuman
-              </label>
-              <select
-                required
-                value={formData.district}
-                onChange={(e) =>
-                  setFormData({ ...formData, district: e.target.value })
-                }
-                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-white"
-              >
-                <option value="">Tumanni tanlang</option>
-                {TASHKENT_DISTRICTS.map((district) => (
-                  <option key={district.value} value={district.value}>
-                    {district.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
 
           {formData.region != "tashkent_city" ? (
             <div>
@@ -291,7 +243,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
           {formData.region === "tashkent_city" && (
             <div>
               <label className="block text-sm text-neutral-300 mb-1">
-                GPS Joylashuv (ixtiyoriy)
+                Joylashuv (ixtiyoriy)
               </label>
               <div className="flex items-center space-x-2">
                 <input
@@ -367,7 +319,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
             className={`w-full py-3 px-6 rounded-md text-sm font-semibold transition-all duration-300 ${
               isDisabled
                 ? "bg-neutral-700 text-neutral-400 cursor-not-allowed"
-                : "bg-white text-black hover:bg-neutral-200"
+                : "bg-yellow-400 hover:bg-yellow-300 text-black"
             }`}
           >
             {createOrderMutation.isPending ? "Loading..." : t("submit.order")}

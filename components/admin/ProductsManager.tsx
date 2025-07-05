@@ -61,7 +61,7 @@ export default function ProductsManager({ search }: { search: string }) {
   };
 
   useEffect(() => {
-    setPage(1); // Reset to page 1 when search changes
+    setPage(1);
   }, [search]);
 
   if (isLoading) {
@@ -118,29 +118,16 @@ export default function ProductsManager({ search }: { search: string }) {
         >
           {t("products.management")}
         </h2>
-        <motion.button
+        <button
           onClick={() => {
             setEditingProduct(null);
             setShowForm(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200"
-          style={{
-            background: "linear-gradient(135deg, #ffffff 0%, #e5e5e5 100%)",
-            color: "#000000",
-            fontFamily: '"Courier New", monospace',
-            fontWeight: "700",
-            textTransform: "uppercase",
-          }}
-          whileHover={{
-            scale: 1.05,
-            background: "linear-gradient(135deg, #000000 0%, #1a1a1a 100%)",
-            color: "#ffffff",
-          }}
-          whileTap={{ scale: 0.95 }}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-br from-white to-neutral-200 text-black font-mono font-bold uppercase transition-transform duration-200 hover:scale-105 active:scale-95"
         >
           <FiPlus size={18} />
           {t("add.product")}
-        </motion.button>
+        </button>
       </div>
 
       <div className="overflow-x-auto">
@@ -251,10 +238,10 @@ export default function ProductsManager({ search }: { search: string }) {
                   </td>
                   <td className="p-4">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors duration-200 ${
                         product.isActive
-                          ? "bg-white text-black"
-                          : "bg-gray-700 text-white"
+                          ? "bg-green-500 text-black border border-green-400"
+                          : "bg-gray-700 text-white border border-gray-600"
                       }`}
                       style={{
                         fontFamily: '"Courier New", monospace',

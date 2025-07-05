@@ -23,7 +23,7 @@ import OrdersAnalytics from "./OrdersAnalytics";
 import ContentManager from "./ContentManager";
 import { motion, AnimatePresence } from "framer-motion";
 
-type TabType = "products" | "categories" | "orders" | "content" | "botuser";
+type TabType = "products" | "categories" | "orders";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("products");
@@ -63,7 +63,6 @@ export default function AdminDashboard() {
     { id: "products" as TabType, label: "Products", icon: FiPackage },
     { id: "categories" as TabType, label: "Categories", icon: FiFolder },
     { id: "orders" as TabType, label: "Orders", icon: FiBarChart },
-    { id: "content" as TabType, label: "Content", icon: FiGlobe },
   ];
 
   const renderContent = () => {
@@ -73,9 +72,7 @@ export default function AdminDashboard() {
       case "categories":
         return <CategoriesManager search={searchInput} />;
       case "orders":
-        return <OrdersAnalytics />;
-      case "content":
-        return <ContentManager />;
+        return <OrdersAnalytics search={searchInput} />;
       default:
         return <ProductsManager search={searchInput} />;
     }

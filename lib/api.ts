@@ -337,9 +337,17 @@ export const useOrderStata = () => {
     queryFn: getOrderStats,
   });
 };
-export const useOrders = () => {
+
+interface UseOrdersParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+export const useOrders = (params: UseOrdersParams = {}) => {
+  const { page = 1, limit = 10, search } = params;
+  console.log(search);
   return useQuery({
-    queryKey: ["orders"],
-    queryFn: getOrders,
+    queryKey: ["orders", page, limit, search],
+    queryFn: () => getOrders(params),
   });
 };

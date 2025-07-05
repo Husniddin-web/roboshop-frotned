@@ -14,6 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { showToast } from "@/lib/toast";
 import { ProductDetailSkeleton } from "../../../components/skelton";
+import BackButton from "../../../components/BackButton";
 
 export default function ProductDetailPage() {
   const queryClient = useQueryClient();
@@ -64,20 +65,19 @@ export default function ProductDetailPage() {
   const translation = product.translations?.[0];
 
   const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
-      dispatch(
-        addToCart({
-          id: product.id,
-          name: translation?.name || "Product",
-          price: Number(product.price),
-          image: product.images?.[0]?.url,
-          quantity,
-        })
-      );
-    }
+    dispatch(
+      addToCart({
+        id: product.id,
+        name: translation?.name || "Product",
+        price: Number(product.price),
+        image: product.images?.[0]?.url,
+        quantity,
+      })
+    );
     showToast.success(
       `${quantity}x ${translation?.name} ${t("added.to.cart")}`
     );
+    setQuantity(1);
   };
 
   const handleImageChange = (idx: number) => {
@@ -88,15 +88,8 @@ export default function ProductDetailPage() {
   return (
     <div className="main-electronics-bg min-h-screen text-sm text-white">
       <Header />
-      <main className="container px-4 sm:px-6 py-6">
-        <button
-          onClick={() => router.back()}
-          className="btn btn-outline text-white border-white hover:bg-neutral-800 mb-6 flex items-center gap-2 text-sm sm:text-base transition-colors duration-200"
-        >
-          <FiArrowLeft size={16} />
-          {t("back")}
-        </button>
-
+      <main className="container px-4 sm:px-6 py-6 mt-14">
+        <BackButton text={t("back")} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
           {/* Image Section */}
           <div>
