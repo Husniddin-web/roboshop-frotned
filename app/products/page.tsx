@@ -1,3 +1,4 @@
+// ProductsPage.tsx - FULL UPDATED CODE
 "use client";
 
 import { useEffect, useState } from "react";
@@ -17,17 +18,22 @@ import {
 } from "../../components/skelton";
 
 export default function ProductsPage() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState("");
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   const queryClient = useQueryClient();
   const router = useRouter();
   const searchParams = useSearchParams();
+
   const search = searchParams.get("search") || "";
   const category = searchParams.get("category") || "";
+  const currentPage = Number(searchParams.get("page")) || 1;
 
-  const { data: productsData, isLoading } = useAdminProducts(search, category);
+  const { data: productsData, isLoading } = useAdminProducts({
+    search,
+    category,
+    page: currentPage,
+  });
+  console.log(productsData);
   const { data: categories = [], isLoading: categoryLoading } = useCategory();
   const { i18n, t } = useTranslation();
 
@@ -37,22 +43,29 @@ export default function ProductsPage() {
   }, [i18n.language]);
 
   const products = productsData?.data || [];
-  const totalPages = productsData?.totalPages || 1;
+  const totalPages = productsData?.meta?.lastPage || 1;
+  const totalProducts = productsData?.meta?.total || 0;
 
-  const handleCategoryChange = (cat: string) => {
-    setSelectedCategory(cat);
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
     const newParams = new URLSearchParams(searchParams);
-    if (cat) {
-      newParams.set("category", cat);
+    newParams.set("page", String(newPage));
+    router.push(`/products?${newParams.toString()}`);
+  };
+
+  const handleCategoryChange = (catId: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (catId) {
+      newParams.set("category", catId);
     } else {
       newParams.delete("category");
     }
+    newParams.set("page", "1");
     router.push(`/products?${newParams.toString()}`);
     setIsMobileFilterOpen(false);
   };
 
   const clearAllFilters = () => {
-    setSelectedCategory("");
     router.push("/products");
     setIsMobileFilterOpen(false);
   };
@@ -81,16 +94,14 @@ export default function ProductsPage() {
               {t("filters")}
             </button>
 
+            {/* --- FILTER SECTION (Desktop) --- */}
             <div className="lg:w-64 lg:flex-shrink-0">
               <aside className="hidden lg:block lg:fixed lg:top-24 lg:w-64 lg:h-[calc(75vh-6rem)] no-scrollbar">
                 {categoryLoading ? (
                   <FilterSkeleton />
                 ) : (
                   <div
-                    style={{
-                      scrollbarWidth: "none",
-                      msOverflowStyle: "none",
-                    }}
+                    style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                     className="bg-gray-800 p-4 rounded-lg border border-yellow-400/30 h-full overflow-y-scroll transition-all duration-300"
                   >
                     <h2 className="text-lg font-bold text-yellow-400 mb-4">
@@ -100,24 +111,24 @@ export default function ProductsPage() {
                       <li
                         onClick={() => handleCategoryChange("")}
                         className={`cursor-pointer px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                          !selectedCategory
+                          !category
                             ? "bg-yellow-400 text-black font-semibold"
                             : "text-yellow-100 hover:text-yellow-300 hover:bg-yellow-400/10"
                         }`}
                       >
                         {t("all.categories")}
                       </li>
-                      {categories.map((category: any) => (
+                      {categories.map((cat: any) => (
                         <li
-                          key={category.id}
-                          onClick={() => handleCategoryChange(category.id)}
+                          key={cat.id}
+                          onClick={() => handleCategoryChange(cat.id)}
                           className={`cursor-pointer px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                            selectedCategory === category.id
+                            category === cat.id
                               ? "bg-yellow-400 text-black font-semibold"
                               : "text-yellow-100 hover:text-yellow-300 hover:bg-yellow-400/10"
                           }`}
                         >
-                          {category?.translations?.[0]?.name || "Unnamed"}
+                          {cat?.translations?.[0]?.name || "Unnamed"}
                         </li>
                       ))}
                     </ul>
@@ -125,6 +136,7 @@ export default function ProductsPage() {
                 )}
               </aside>
 
+              {/* --- FILTER SECTION (Mobile) --- */}
               {isMobileFilterOpen && (
                 <>
                   {categoryLoading ? (
@@ -147,24 +159,24 @@ export default function ProductsPage() {
                           <li
                             onClick={() => handleCategoryChange("")}
                             className={`cursor-pointer px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                              !selectedCategory
+                              !category
                                 ? "bg-yellow-400 text-black font-semibold"
                                 : "text-yellow-100 hover:text-yellow-300 hover:bg-yellow-400/10"
                             }`}
                           >
                             {t("all.categories")}
                           </li>
-                          {categories.map((category: any) => (
+                          {categories.map((cat: any) => (
                             <li
-                              key={category.id}
-                              onClick={() => handleCategoryChange(category.id)}
+                              key={cat.id}
+                              onClick={() => handleCategoryChange(cat.id)}
                               className={`cursor-pointer px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                                selectedCategory === category.id
+                                category === cat.id
                                   ? "bg-yellow-400 text-black font-semibold"
                                   : "text-yellow-100 hover:text-yellow-300 hover:bg-yellow-400/10"
                               }`}
                             >
-                              {category?.translations?.[0]?.name || "Unnamed"}
+                              {cat?.translations?.[0]?.name || "Unnamed"}
                             </li>
                           ))}
                         </ul>
@@ -181,7 +193,7 @@ export default function ProductsPage() {
               )}
             </div>
 
-            {/* Products Section */}
+            {/* --- PRODUCTS GRID & PAGINATION --- */}
             <div className="flex-1 min-w-0 lg:ml-0">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
@@ -192,7 +204,7 @@ export default function ProductsPage() {
                   </h1>
                   {!isLoading && (
                     <p className="text-yellow-200 text-sm">
-                      {products.length} {t("products.found")}
+                      {totalProducts} {t("products.found")}
                     </p>
                   )}
                 </div>
@@ -207,7 +219,7 @@ export default function ProductsPage() {
               </div>
 
               {isLoading ? (
-                <ProductGridSkeleton count={4} />
+                <ProductGridSkeleton count={12} />
               ) : products.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
                   {products.map((product: any) => (
@@ -220,12 +232,11 @@ export default function ProductsPage() {
                 </div>
               )}
 
+              {/* --- PAGINATION CONTROLS (Updated Logic) --- */}
               {!isLoading && totalPages > 1 && (
-                <div className="flex justify-center gap-2 mt-8">
+                <div className="flex justify-center items-center gap-2 mt-8">
                   <button
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(prev - 1, 1))
-                    }
+                    onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
                     className="px-4 py-2 text-sm bg-gray-800 border border-yellow-400/30 text-yellow-400 rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-all duration-200"
                   >
@@ -242,7 +253,7 @@ export default function ProductsPage() {
                     return (
                       <button
                         key={page}
-                        onClick={() => setCurrentPage(page)}
+                        onClick={() => handlePageChange(page)}
                         className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
                           currentPage === page
                             ? "bg-yellow-400 text-black font-semibold"
@@ -254,9 +265,7 @@ export default function ProductsPage() {
                     );
                   })}
                   <button
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                    }
+                    onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
                     className="px-4 py-2 text-sm bg-gray-800 border border-yellow-400/30 text-yellow-400 rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-all duration-200"
                   >

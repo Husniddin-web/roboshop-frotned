@@ -21,17 +21,23 @@ export default function ProductsManager({ search }: { search: string }) {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 10; // We'll use this for the 'limit'
 
-  const { data: productsData = {}, isLoading } = useAdminProducts(search);
-  const allProducts = productsData?.data || [];
-  const totalPages = Math.ceil(allProducts.length / itemsPerPage);
-  const paginatedProducts = allProducts.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
+  // --- 1. UPDATED DATA FETCHING ---
+  // Pass the current page and item limit directly to the hook.
+  // React Query will automatically refetch when `page` or `search` changes.
+  const { data: productsData, isLoading } = useAdminProducts({
+    search,
+    page,
+    limit: itemsPerPage,
+  });
 
-  const updateProductMutation = useUpdateProduct();
+  // --- 2. USE SERVER-SIDE PAGINATION DATA ---
+  // The data from the API is already paginated, so no more .slice() needed.
+  const paginatedProducts = productsData?.data || [];
+  // Get total pages from the API's metadata.
+  const totalPages = productsData?.meta?.lastPage || 1;
+
   const deleteProductMutation = useDeleteProduct();
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
@@ -70,25 +76,9 @@ export default function ProductsManager({ search }: { search: string }) {
         className="text-center py-12 rounded-lg"
         style={{
           background: "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)",
-          border: "2px solid rgba(255, 255, 255, 0.1)",
         }}
       >
-        <motion.div
-          className="loading mx-auto"
-          style={{
-            width: "50px",
-            height: "50px",
-            border: "4px solid rgba(255, 255, 255, 0.2)",
-            borderTop: "4px solid #ffffff",
-            borderRadius: "50%",
-          }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-        />
-        <p
-          className="mt-4 text-sm font-medium"
-          style={{ color: "#ffffff", fontFamily: '"Courier New", monospace' }}
-        >
+        <p className="mt-4 text-sm font-medium text-white">
           {t("loading.products")}
         </p>
       </div>
@@ -100,8 +90,6 @@ export default function ProductsManager({ search }: { search: string }) {
       className="rounded-lg p-6 shadow-lg"
       style={{
         background: "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)",
-        border: "2px solid rgba(255, 255, 255, 0.1)",
-        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
       }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -109,12 +97,8 @@ export default function ProductsManager({ search }: { search: string }) {
     >
       <div className="flex justify-between items-center mb-6">
         <h2
-          className="text-2xl font-bold"
-          style={{
-            color: "#ffffff",
-            fontFamily: '"Courier New", monospace',
-            textTransform: "uppercase",
-          }}
+          className="text-2xl font-bold text-white uppercase"
+          style={{ fontFamily: '"Courier New", monospace' }}
         >
           {t("products.management")}
         </h2>
@@ -123,7 +107,7 @@ export default function ProductsManager({ search }: { search: string }) {
             setEditingProduct(null);
             setShowForm(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-br from-white to-neutral-200 text-black font-mono font-bold uppercase transition-transform duration-200 hover:scale-105 active:scale-95"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-white font-bold uppercase transition-transform duration-200 hover:scale-105"
         >
           <FiPlus size={18} />
           {t("add.product")}
@@ -135,7 +119,6 @@ export default function ProductsManager({ search }: { search: string }) {
           className="rounded-lg overflow-hidden"
           style={{
             background: "linear-gradient(135deg, #0f0f0f 0%, #1f1f1f 100%)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
           }}
         >
           <table className="w-full border-collapse">
@@ -155,13 +138,8 @@ export default function ProductsManager({ search }: { search: string }) {
                 ].map((key) => (
                   <th
                     key={key}
-                    className="p-4 text-left font-semibold border-b"
-                    style={{
-                      color: "#ffffff",
-                      borderColor: "rgba(255, 255, 255, 0.1)",
-                      fontFamily: '"Courier New", monospace',
-                      textTransform: "uppercase",
-                    }}
+                    className="p-4 text-left font-semibold border-b border-neutral-700 text-white uppercase"
+                    style={{ fontFamily: '"Courier New", monospace' }}
                   >
                     {t(key)}
                   </th>
@@ -172,81 +150,45 @@ export default function ProductsManager({ search }: { search: string }) {
               {paginatedProducts.map((product: any, index: number) => (
                 <motion.tr
                   key={product.id}
-                  className="border-b transition-colors duration-200"
-                  style={{ borderColor: "rgba(255, 255, 255, 0.05)" }}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                  className="border-b border-neutral-800 transition-colors duration-200"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
                   whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.03)" }}
                 >
                   <td className="p-4">
-                    <div className="flex gap-2">
-                      {product.images
-                        ?.slice(0, 3)
-                        .map((img: any, idx: number) => (
-                          <motion.img
-                            key={idx}
-                            src={
-                              `${BASE_URL}/uploads/${img.url}` ||
-                              "/placeholder.svg"
-                            }
-                            className="w-12 h-12 object-cover rounded-md"
-                            style={{
-                              border: "2px solid rgba(255, 255, 255, 0.1)",
-                            }}
-                            alt={`Product ${idx + 1}`}
-                            whileHover={{ scale: 1.1 }}
-                          />
-                        ))}
-                      {product.images?.length > 3 && (
-                        <div
-                          className="w-12 h-12 flex items-center justify-center text-xs rounded-md font-medium"
-                          style={{
-                            color: "#ffffff",
-                            background: "rgba(255, 255, 255, 0.05)",
-                            border: "2px solid rgba(255, 255, 255, 0.1)",
-                          }}
-                        >
-                          +{product.images.length - 3}
-                        </div>
-                      )}
-                      {!product.images?.length && (
-                        <div
-                          className="w-12 h-12 rounded-md flex items-center justify-center"
-                          style={{
-                            background: "rgba(255, 255, 255, 0.05)",
-                            border: "2px solid rgba(255, 255, 255, 0.1)",
-                          }}
-                        >
-                          <FiImage style={{ color: "#ffffff" }} size={20} />
-                        </div>
-                      )}
-                    </div>
+                    {
+                      <motion.img
+                        src={
+                          product?.images?.[0]?.url
+                            ? `${BASE_URL}/uploads/${product.images[0].url}`
+                            : "./placeholder.svg"
+                        }
+                        className="w-12 h-12 object-cover rounded-md"
+                        style={{
+                          border: "2px solid rgba(255, 255, 255, 0.1)",
+                        }}
+                        alt="product image"
+                        whileHover={{ scale: 1.1 }}
+                      />
+                    }
                   </td>
                   <td className="p-4 text-white font-mono">
                     {product.translations[0]?.name || "Unnamed"}
                   </td>
                   <td className="p-4 text-white font-mono font-semibold">
-                    {Number(product.price).toFixed(2)} SUM
+                    {Number(product.price).toFixed(2)} UZS
                   </td>
                   <td className="p-4 text-gray-400 font-mono">
-                    {product.category?.translations?.find(
-                      (t: any) => t.languageId === i18n.language
-                    )?.name ||
-                      product.category?.translations?.[0]?.name ||
-                      "No Category"}
+                    {product.category?.translations?.[0]?.name || "No Category"}
                   </td>
                   <td className="p-4">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors duration-200 ${
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
                         product.isActive
-                          ? "bg-green-500 text-black border border-green-400"
-                          : "bg-gray-700 text-white border border-gray-600"
+                          ? "bg-green-500 text-black"
+                          : "bg-gray-700 text-white"
                       }`}
-                      style={{
-                        fontFamily: '"Courier New", monospace',
-                        textTransform: "uppercase",
-                      }}
                     >
                       {product.isActive ? t("active") : t("inactive")}
                     </span>
@@ -258,26 +200,22 @@ export default function ProductsManager({ search }: { search: string }) {
                           setEditingProduct(product.id);
                           setShowForm(true);
                         }}
-                        className="p-2 rounded-md"
-                        style={{
-                          background: "rgba(255, 255, 255, 0.05)",
-                          color: "#ffffff",
-                        }}
+                        className="p-2 rounded-md bg-neutral-700 text-white"
                         title={t("edit")}
-                        whileHover={{ scale: 1.1 }}
+                        whileHover={{ scale: 1.1, backgroundColor: "#555" }}
                         whileTap={{ scale: 0.95 }}
                       >
                         <FiEdit size={16} />
                       </motion.button>
                       <motion.button
                         onClick={() => handleDelete(product.id)}
-                        className="p-2 rounded-md"
-                        style={{
-                          background: "rgba(239, 68, 68, 0.1)",
-                          color: "#ef4444",
-                        }}
+                        className="p-2 rounded-md bg-red-900/50 text-red-400"
                         title={t("delete")}
-                        whileHover={{ scale: 1.1 }}
+                        whileHover={{
+                          scale: 1.1,
+                          backgroundColor: "#ef4444",
+                          color: "#fff",
+                        }}
                         whileTap={{ scale: 0.95 }}
                       >
                         <FiTrash2 size={16} />
@@ -291,13 +229,13 @@ export default function ProductsManager({ search }: { search: string }) {
         </div>
       </div>
 
-      {/* Pagination Controls */}
+      {/* Pagination Controls - NO CHANGE NEEDED HERE */}
       {totalPages > 1 && (
         <div className="mt-6 flex justify-center items-center gap-4">
           <button
             onClick={() => setPage((p) => Math.max(p - 1, 1))}
             disabled={page === 1}
-            className="px-4 py-2 rounded border text-white bg-gray-700 hover:bg-gray-600 disabled:opacity-40 font-mono"
+            className="px-4 py-2 rounded border border-neutral-600 text-white bg-neutral-800 hover:bg-neutral-700 disabled:opacity-40 font-mono"
           >
             {t("previous")}
           </button>
@@ -307,7 +245,7 @@ export default function ProductsManager({ search }: { search: string }) {
           <button
             onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
             disabled={page === totalPages}
-            className="px-4 py-2 rounded border text-white bg-gray-700 hover:bg-gray-600 disabled:opacity-40 font-mono"
+            className="px-4 py-2 rounded border border-neutral-600 text-white bg-neutral-800 hover:bg-neutral-700 disabled:opacity-40 font-mono"
           >
             {t("next")}
           </button>

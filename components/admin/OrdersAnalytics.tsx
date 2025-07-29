@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import type React from "react";
+import { useState } from "react";
 import { useOrders, useOrderStata } from "../../lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -17,6 +18,7 @@ import {
   FiMapPin,
   FiCalendar,
   FiDollarSign,
+  FiRefreshCw,
 } from "react-icons/fi";
 import LoadingOrders from "../LoadingOrders";
 import NoOrders from "../NoOrders";
@@ -40,7 +42,7 @@ interface Order {
   customerName: string;
   phoneNumber: string;
   totalAmount: string;
-  status: "PENDING" | "CONFIRMED" | "DELIVERED";
+  status: "PENDING" | "CONFIRMED" | "DELIVERED" | "CANCELLED" | "PROCESSING";
   notes: string;
   address: string;
   location: string;
@@ -51,53 +53,47 @@ interface Order {
 
 export default function OrdersAnalytics({ search }: { search: string }) {
   const { t } = useTranslation();
+
+  // --- STATE MANAGEMENT ---
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [dateFilter, setDateFilter] = useState<string>("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // --- DATA FETCHING ---
   const { data: stats = [], isLoading: statsLoading } = useOrderStata();
+
   const { data: ordersResponse, isLoading: orderLoading } = useOrders({
     page: currentPage,
     limit: itemsPerPage,
     search,
+    status: statusFilter,
+    date: dateFilter,
   });
 
-  const allOrders = ordersResponse?.data || [];
+  // --- DERIVED DATA ---
+  const currentOrders = ordersResponse?.data || [];
+  const totalItems = ordersResponse?.meta?.total || 0;
+  const totalPages = ordersResponse?.meta?.lastPage || 1;
 
-  // Frontend filtering
-  const filteredOrders = useMemo(() => {
-    if (statusFilter === "ALL") {
-      return allOrders;
-    }
-    return allOrders.filter((order: Order) => order.status === statusFilter);
-  }, [allOrders, statusFilter]);
-
-  const totalItems = filteredOrders.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentOrders = filteredOrders.slice(startIndex, endIndex);
-
-  // Pagination handlers
+  // --- EVENT HANDLERS ---
   const goToPage = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    setCurrentPage(Math.max(1, Math.min(page, totalPages || 1)));
   };
 
-  const goToFirstPage = () => setCurrentPage(1);
-  const goToLastPage = () => setCurrentPage(totalPages);
-  const goToPreviousPage = () => setCurrentPage(Math.max(1, currentPage - 1));
-  const goToNextPage = () =>
-    setCurrentPage(Math.min(totalPages, currentPage + 1));
-
-  const handleItemsPerPageChange = (newItemsPerPage: number) => {
-    setItemsPerPage(newItemsPerPage);
-    setCurrentPage(1);
+  const handleFilterChange = (
+    updater: React.Dispatch<React.SetStateAction<any>>,
+    value: any
+  ) => {
+    updater(value);
+    setCurrentPage(1); // Reset to page 1 whenever any filter changes
   };
 
-  const handleStatusFilterChange = (status: string) => {
-    setStatusFilter(status);
+  const clearFilters = () => {
+    setStatusFilter("ALL");
+    setDateFilter("");
     setCurrentPage(1);
   };
 
@@ -111,12 +107,12 @@ export default function OrdersAnalytics({ search }: { search: string }) {
     setIsModalOpen(false);
   };
 
-  // Generate page numbers for pagination
   const getPageNumbers = () => {
     const pages = [];
+    if (totalPages <= 1) return [];
     const maxVisiblePages = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
     if (endPage - startPage + 1 < maxVisiblePages) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
@@ -140,43 +136,40 @@ export default function OrdersAnalytics({ search }: { search: string }) {
       </h2>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div
           className="p-6 text-center rounded-lg bg-gradient-to-br from-gray-900 to-gray-800 border-2 border-white/10 shadow-xl"
           whileHover={{ scale: 1.02, borderColor: "rgba(255, 255, 255, 0.2)" }}
         >
           <h3 className="text-2xl font-bold text-white font-mono">
-            {stats.total}
+            {stats.total || 0}
           </h3>
           <p className="text-gray-400 font-mono">{t("total.orders")}</p>
         </motion.div>
-
         <motion.div
           className="p-6 text-center rounded-lg bg-gradient-to-br from-gray-900 to-gray-800 border-2 border-green-500/30 shadow-xl"
           whileHover={{ scale: 1.02, borderColor: "rgba(34, 197, 94, 0.5)" }}
         >
           <h3 className="text-2xl font-bold text-green-500 font-mono">
-            {stats.totalRevenue} UZS
+            {stats.totalRevenue || 0} UZS
           </h3>
           <p className="text-gray-400 font-mono">{t("total.revenue")}</p>
         </motion.div>
-
         <motion.div
           className="p-6 text-center rounded-lg bg-gradient-to-br from-gray-900 to-gray-800 border-2 border-yellow-500/30 shadow-xl"
           whileHover={{ scale: 1.02, borderColor: "rgba(234, 179, 8, 0.5)" }}
         >
           <h3 className="text-2xl font-bold text-yellow-500 font-mono">
-            {stats.pending}
+            {stats.pending || 0}
           </h3>
           <p className="text-gray-400 font-mono">{t("pending.orders")}</p>
         </motion.div>
-
         <motion.div
           className="p-6 text-center rounded-lg bg-gradient-to-br from-gray-900 to-gray-800 border-2 border-blue-500/30 shadow-xl"
           whileHover={{ scale: 1.02, borderColor: "rgba(59, 130, 246, 0.5)" }}
         >
           <h3 className="text-2xl font-bold text-blue-500 font-mono">
-            {stats.confirmed}
+            {stats.confirmed || 0}
           </h3>
           <p className="text-gray-400 font-mono">{t("completed.orders")}</p>
         </motion.div>
@@ -189,20 +182,20 @@ export default function OrdersAnalytics({ search }: { search: string }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        {/* Table Header with Controls */}
+        {/* Table Header with ALL Controls */}
         <div className="p-6 border-b border-white/10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <h3 className="text-lg font-semibold text-white font-mono uppercase tracking-wider">
             {t("recent.orders")}
           </h3>
-
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            {/* Status Filter */}
             <div className="flex items-center gap-2">
               <FiFilter className="text-white" size={16} />
               <select
                 value={statusFilter}
-                onChange={(e) => handleStatusFilterChange(e.target.value)}
-                className="rounded-lg px-3 py-2 bg-white/5 border border-white/10 text-white font-mono text-sm transition-all duration-200 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20"
+                onChange={(e) =>
+                  handleFilterChange(setStatusFilter, e.target.value)
+                }
+                className="rounded-lg px-3 py-2 bg-white/5 border border-white/10 text-white font-mono text-sm"
               >
                 <option value="ALL">All Status</option>
                 <option value="PENDING">Pending</option>
@@ -211,26 +204,34 @@ export default function OrdersAnalytics({ search }: { search: string }) {
                 <option value="CANCELLED">Cancelled</option>
                 <option value="PROCESSING">Processing</option>
               </select>
-            </div>
-
-            {/* Items per page selector */}
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400 font-mono text-sm">
-                Items per page:
-              </span>
-              <select
-                value={itemsPerPage}
+              <input
+                type="date"
+                value={dateFilter}
                 onChange={(e) =>
-                  handleItemsPerPageChange(Number(e.target.value))
+                  handleFilterChange(setDateFilter, e.target.value)
                 }
-                className="rounded-lg px-3 py-2 bg-white/5 border border-white/10 text-white font-mono text-sm transition-all duration-200 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20"
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-              </select>
+                className="rounded-lg px-3 py-2 bg-white/5 border border-white/10 text-white font-mono text-sm [color-scheme:dark]"
+              />
             </div>
+            {(statusFilter !== "ALL" || dateFilter) && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-2 text-sm text-yellow-400 hover:text-yellow-300"
+              >
+                <FiRefreshCw size={14} /> Clear Filters
+              </button>
+            )}
+            <select
+              value={itemsPerPage}
+              onChange={(e) =>
+                handleFilterChange(setItemsPerPage, Number(e.target.value))
+              }
+              className="rounded-lg px-3 py-2 bg-white/5 border border-white/10 text-white font-mono text-sm"
+            >
+              <option value={5}>5 / page</option>
+              <option value={10}>10 / page</option>
+              <option value={20}>20 / page</option>
+            </select>
           </div>
         </div>
 
@@ -240,22 +241,22 @@ export default function OrdersAnalytics({ search }: { search: string }) {
             <thead className="bg-gradient-to-r from-gray-800 to-gray-700">
               <tr>
                 <th className="p-4 text-left font-semibold text-white font-mono uppercase tracking-wider">
-                  {t("order.id")}
+                  ID
                 </th>
                 <th className="p-4 text-left font-semibold text-white font-mono uppercase tracking-wider">
-                  {t("customer")}
+                  Customer
                 </th>
                 <th className="p-4 text-left font-semibold text-white font-mono uppercase tracking-wider">
-                  {t("phone")}
+                  Phone
                 </th>
                 <th className="p-4 text-left font-semibold text-white font-mono uppercase tracking-wider">
-                  {t("total")}
+                  Total
                 </th>
                 <th className="p-4 text-left font-semibold text-white font-mono uppercase tracking-wider">
-                  {t("status")}
+                  Status
                 </th>
                 <th className="p-4 text-left font-semibold text-white font-mono uppercase tracking-wider">
-                  {t("date")}
+                  Date
                 </th>
               </tr>
             </thead>
@@ -264,13 +265,13 @@ export default function OrdersAnalytics({ search }: { search: string }) {
                 <motion.tr
                   key={order.id}
                   className="border-b border-white/5 transition-colors duration-200 cursor-pointer hover:bg-white/5"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
                   onClick={() => openOrderModal(order)}
                 >
                   <td className="p-4 text-white font-mono">
-                    #{order.id.slice(-8)}
+                    #{order.id.slice(-6)}
                   </td>
                   <td className="p-4 text-white font-mono">
                     {order.customerName}
@@ -283,14 +284,14 @@ export default function OrdersAnalytics({ search }: { search: string }) {
                   </td>
                   <td className="p-4">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold font-mono uppercase tracking-wider ${
+                      className={`px-2 py-1 rounded-full text-xs font-semibold font-mono uppercase tracking-wider ${
                         order.status === "PENDING"
-                          ? "bg-yellow-900 text-yellow-300 border border-yellow-600"
+                          ? "bg-yellow-900/70 text-yellow-300"
                           : order.status === "CONFIRMED"
-                          ? "bg-blue-900 text-blue-300 border border-blue-600"
+                          ? "bg-blue-900/70 text-blue-300"
                           : order.status === "DELIVERED"
-                          ? "bg-green-900 text-green-300 border border-green-600"
-                          : "bg-gray-800 text-gray-300 border border-gray-600"
+                          ? "bg-green-900/70 text-green-300"
+                          : "bg-gray-800/70 text-gray-300"
                       }`}
                     >
                       {order.status}
@@ -308,107 +309,56 @@ export default function OrdersAnalytics({ search }: { search: string }) {
         {/* Pagination Controls */}
         {totalPages > 1 && (
           <div className="p-6 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
-            {/* Pagination Info */}
             <div className="text-gray-400 font-mono text-sm">
-              Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of{" "}
-              {totalItems} orders
+              Showing{" "}
+              {totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{" "}
+              {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}{" "}
+              orders
             </div>
-
-            {/* Pagination Buttons */}
             <div className="flex items-center gap-2">
-              {/* First Page */}
               <motion.button
-                onClick={goToFirstPage}
+                onClick={() => goToPage(1)}
                 disabled={currentPage === 1}
-                className={`p-2 rounded-lg transition-all duration-200 border border-white/10 ${
-                  currentPage === 1
-                    ? "bg-white/5 text-gray-600 cursor-not-allowed"
-                    : "bg-white/5 text-white hover:bg-white/10"
-                }`}
-                whileHover={
-                  currentPage !== 1
-                    ? { backgroundColor: "rgba(255, 255, 255, 0.1)" }
-                    : {}
-                }
-                whileTap={currentPage !== 1 ? { scale: 0.95 } : {}}
+                className="p-2 rounded-lg bg-white/5 text-white border border-white/10 disabled:opacity-50"
+                whileTap={{ scale: 0.95 }}
               >
                 <FiChevronsLeft size={16} />
               </motion.button>
-
-              {/* Previous Page */}
               <motion.button
-                onClick={goToPreviousPage}
+                onClick={() => goToPage(currentPage - 1)}
                 disabled={currentPage === 1}
-                className={`p-2 rounded-lg transition-all duration-200 border border-white/10 ${
-                  currentPage === 1
-                    ? "bg-white/5 text-gray-600 cursor-not-allowed"
-                    : "bg-white/5 text-white hover:bg-white/10"
-                }`}
-                whileHover={
-                  currentPage !== 1
-                    ? { backgroundColor: "rgba(255, 255, 255, 0.1)" }
-                    : {}
-                }
-                whileTap={currentPage !== 1 ? { scale: 0.95 } : {}}
+                className="p-2 rounded-lg bg-white/5 text-white border border-white/10 disabled:opacity-50"
+                whileTap={{ scale: 0.95 }}
               >
                 <FiChevronLeft size={16} />
               </motion.button>
-
-              {/* Page Numbers */}
               {getPageNumbers().map((pageNum) => (
                 <motion.button
                   key={pageNum}
                   onClick={() => goToPage(pageNum)}
-                  className={`px-3 py-2 rounded-lg transition-all duration-200 border border-white/10 font-mono min-w-[40px] ${
+                  className={`px-3 py-2 rounded-lg border border-white/10 font-mono min-w-[40px] ${
                     currentPage === pageNum
-                      ? "bg-gradient-to-r from-white to-gray-200 text-black font-bold"
-                      : "bg-white/5 text-white hover:bg-white/10"
+                      ? "bg-white text-black font-bold"
+                      : "bg-white/5 text-white"
                   }`}
-                  whileHover={
-                    currentPage !== pageNum
-                      ? { backgroundColor: "rgba(255, 255, 255, 0.1)" }
-                      : {}
-                  }
                   whileTap={{ scale: 0.95 }}
                 >
                   {pageNum}
                 </motion.button>
               ))}
-
-              {/* Next Page */}
               <motion.button
-                onClick={goToNextPage}
+                onClick={() => goToPage(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className={`p-2 rounded-lg transition-all duration-200 border border-white/10 ${
-                  currentPage === totalPages
-                    ? "bg-white/5 text-gray-600 cursor-not-allowed"
-                    : "bg-white/5 text-white hover:bg-white/10"
-                }`}
-                whileHover={
-                  currentPage !== totalPages
-                    ? { backgroundColor: "rgba(255, 255, 255, 0.1)" }
-                    : {}
-                }
-                whileTap={currentPage !== totalPages ? { scale: 0.95 } : {}}
+                className="p-2 rounded-lg bg-white/5 text-white border border-white/10 disabled:opacity-50"
+                whileTap={{ scale: 0.95 }}
               >
                 <FiChevronRight size={16} />
               </motion.button>
-
-              {/* Last Page */}
               <motion.button
-                onClick={goToLastPage}
+                onClick={() => goToPage(totalPages)}
                 disabled={currentPage === totalPages}
-                className={`p-2 rounded-lg transition-all duration-200 border border-white/10 ${
-                  currentPage === totalPages
-                    ? "bg-white/5 text-gray-600 cursor-not-allowed"
-                    : "bg-white/5 text-white hover:bg-white/10"
-                }`}
-                whileHover={
-                  currentPage !== totalPages
-                    ? { backgroundColor: "rgba(255, 255, 255, 0.1)" }
-                    : {}
-                }
-                whileTap={currentPage !== totalPages ? { scale: 0.95 } : {}}
+                className="p-2 rounded-lg bg-white/5 text-white border border-white/10 disabled:opacity-50"
+                whileTap={{ scale: 0.95 }}
               >
                 <FiChevronsRight size={16} />
               </motion.button>
@@ -416,17 +366,16 @@ export default function OrdersAnalytics({ search }: { search: string }) {
           </div>
         )}
 
-        {/* Empty State */}
-        {filteredOrders.length === 0 && !orderLoading && <NoOrders />}
-        {/* Loading State */}
+        {/* Loading and Empty States */}
         {orderLoading && <LoadingOrders />}
+        {!orderLoading && currentOrders.length === 0 && <NoOrders />}
       </motion.div>
 
       {/* Order Details Modal */}
       <AnimatePresence>
         {isModalOpen && selectedOrder && (
           <motion.div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -439,29 +388,24 @@ export default function OrdersAnalytics({ search }: { search: string }) {
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modal Header */}
-              <div className="p-6 border-b border-white/10 flex justify-between items-center">
+              <div className="p-6 border-b border-white/10 flex justify-between items-center sticky top-0 bg-gray-900/80 backdrop-blur-sm">
                 <h2 className="text-xl font-bold text-white font-mono uppercase tracking-wider">
-                  Order Details #{selectedOrder.id.slice(-8)}
+                  Order Details #{selectedOrder.id.slice(-6)}
                 </h2>
                 <motion.button
                   onClick={closeOrderModal}
-                  className="p-2 rounded-lg transition-all duration-200 bg-white/5 border border-white/10 text-white hover:bg-white/10"
-                  whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+                  className="p-2 rounded-full bg-white/10 text-white"
                   whileTap={{ scale: 0.95 }}
                 >
                   <FiX size={20} />
                 </motion.button>
               </div>
-
-              {/* Modal Content */}
               <div className="p-6">
-                {/* Customer Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div className="p-4 rounded-lg bg-white/5 border border-white/10">
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white font-mono">
                       <FiUser size={20} />
-                      Customer Information
+                      Customer Info
                     </h3>
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
@@ -484,11 +428,10 @@ export default function OrdersAnalytics({ search }: { search: string }) {
                       </div>
                     </div>
                   </div>
-
                   <div className="p-4 rounded-lg bg-white/5 border border-white/10">
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white font-mono">
                       <FiDollarSign size={20} />
-                      Order Information
+                      Order Info
                     </h3>
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
@@ -502,12 +445,8 @@ export default function OrdersAnalytics({ search }: { search: string }) {
                         <span
                           className={`px-2 py-1 rounded text-xs font-semibold font-mono uppercase ${
                             selectedOrder.status === "PENDING"
-                              ? "bg-yellow-900 text-yellow-300 border border-yellow-600"
-                              : selectedOrder.status === "CONFIRMED"
-                              ? "bg-blue-900 text-blue-300 border border-blue-600"
-                              : selectedOrder.status === "DELIVERED"
-                              ? "bg-green-900 text-green-300 border border-green-600"
-                              : "bg-gray-800 text-gray-300 border border-gray-600"
+                              ? "bg-yellow-900 text-yellow-300"
+                              : "bg-green-900 text-green-300"
                           }`}
                         >
                           {selectedOrder.status}
@@ -525,8 +464,6 @@ export default function OrdersAnalytics({ search }: { search: string }) {
                     </div>
                   </div>
                 </div>
-
-                {/* Order Items */}
                 <div className="p-4 rounded-lg bg-white/5 border border-white/10">
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white font-mono">
                     <FiPackage size={20} />
@@ -536,27 +473,20 @@ export default function OrdersAnalytics({ search }: { search: string }) {
                     {selectedOrder.orderItems.map((item, index) => (
                       <motion.div
                         key={item.id}
-                        className="p-4 rounded-lg bg-white/5 border border-white/10"
+                        className="p-4 rounded-lg bg-white/5"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <h4 className="font-semibold mb-2 text-white font-mono">
-                              {item.product.translations[0]?.name ||
-                                "Product Name"}
+                            <h4 className="font-semibold mb-1 text-white font-mono">
+                              {item.product.translations[0]?.name || "Product"}
                             </h4>
-                            <p className="text-sm mb-2 text-gray-400 font-mono">
-                              {item.product.translations[0]?.description ||
-                                "No description"}
-                            </p>
-                            <div className="flex items-center gap-4">
-                              <span className="text-gray-400 font-mono">
-                                Quantity: {item.quantity}
-                              </span>
-                              <span className="text-gray-400 font-mono">
-                                Unit Price:{" "}
+                            <div className="flex items-center gap-4 text-sm text-gray-400 font-mono">
+                              <span>Qty: {item.quantity}</span>
+                              <span>
+                                @{" "}
                                 {Number.parseFloat(
                                   item.product.price
                                 ).toLocaleString()}{" "}
@@ -577,18 +507,6 @@ export default function OrdersAnalytics({ search }: { search: string }) {
                     ))}
                   </div>
                 </div>
-
-                {/* Notes */}
-                {selectedOrder.notes && (
-                  <div className="p-4 rounded-lg mt-6 bg-white/5 border border-white/10">
-                    <h3 className="text-lg font-semibold mb-2 text-white font-mono">
-                      Notes
-                    </h3>
-                    <p className="text-gray-400 font-mono">
-                      {selectedOrder.notes}
-                    </p>
-                  </div>
-                )}
               </div>
             </motion.div>
           </motion.div>

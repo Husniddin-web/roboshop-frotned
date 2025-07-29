@@ -16,7 +16,7 @@ interface ProductCardProps {
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const [quantity, setQuantity] = useState(1); // State for quantity
+  const [quantity, setQuantity] = useState(1);
   const dispatch = useDispatch();
   const { t } = useTranslation();
   const translation = product.translations?.[0];
@@ -122,7 +122,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </button>
           </div>
 
-          {/* Add to Cart Button */}
           <button
             onClick={handleAddToCart}
             className="flex-grow font-semibold rounded-lg transition-all duration-300 ease-in-out border-2 border-yellow-400 bg-yellow-400 text-black hover:bg-yellow-500 hover:border-yellow-500 active:bg-yellow-600 active:border-yellow-600 py-2 sm:py-2.5 px-3 sm:px-4 touch-manipulation flex items-center justify-center gap-1.5 sm:gap-2"

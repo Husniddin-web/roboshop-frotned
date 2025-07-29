@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useDispatch } from "react-redux";
 import { addToCart } from "@/lib/features/cartSlice";
-import { useProduct } from "@/lib/api";
+import { useAdminProducts, useProduct } from "@/lib/api";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Cart from "@/components/Cart";
@@ -13,8 +13,12 @@ import { FiMinus, FiPlus, FiShoppingCart, FiArrowLeft } from "react-icons/fi";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { showToast } from "@/lib/toast";
-import { ProductDetailSkeleton } from "../../../components/skelton";
+import {
+  ProductDetailSkeleton,
+  ProductGridSkeleton,
+} from "../../../components/skelton";
 import BackButton from "../../../components/BackButton";
+import ProductCard from "../../../components/ProductCard";
 
 export default function ProductDetailPage() {
   const queryClient = useQueryClient();
@@ -30,6 +34,13 @@ export default function ProductDetailPage() {
   const { i18n, t } = useTranslation();
   const router = useRouter();
 
+  const categoryId = product?.categoryId;
+  const { data: relatedProductsData, isLoading: isRelatedLoading } =
+    useAdminProducts({ category: categoryId });
+
+  const relatedProducts = relatedProductsData?.data?.filter(
+    (p: any) => p.id !== productId
+  );
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ["product"] });
   }, [i18n.language, queryClient]);
@@ -61,6 +72,7 @@ export default function ProductDetailPage() {
       </div>
     );
   }
+  console.log(product);
 
   const translation = product.translations?.[0];
 
@@ -187,6 +199,25 @@ export default function ProductDetailPage() {
               </button>
             </div>
           </div>
+        </div>
+
+        <div className="mt-16 sm:mt-20">
+          <h2 className="text-xl text-center sm:text-2xl font-bold mb-6 text-yellow-400">
+            {t("related.products")}
+          </h2>
+          {isRelatedLoading ? (
+            <ProductGridSkeleton count={4} />
+          ) : relatedProducts && relatedProducts.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+              {relatedProducts.map((relatedProd: any) => (
+                <ProductCard key={relatedProd.id} product={relatedProd} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-neutral-400 text-center">
+              {t("No related products")}
+            </p>
+          )}
         </div>
       </main>
       <Footer />

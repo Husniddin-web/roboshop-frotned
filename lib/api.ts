@@ -14,17 +14,20 @@ import {
   deleteProduct,
   getAllCategory,
   getAllCategoryForAdmin,
+  getAllOrders,
   getAllProducts,
+  getCategoryPreviews,
   getLang,
   getOneProductById,
   getOneProductByIdForAdmin,
-  getOrders,
   getOrderStats,
+  OrderQueryOptions,
   removeImage,
   updateCategory,
   updateProduct,
   uploadImage,
 } from "./api-real";
+import { ProductQueryOptions } from "../app/products/interface";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
@@ -128,21 +131,6 @@ async function apiRequest<T>(
   return response.json();
 }
 
-// Products API
-export const useProducts = (page = 1, categoryId?: string, search?: string) => {
-  return useQuery({
-    queryKey: ["products", page, categoryId, search],
-    queryFn: () => {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        ...(categoryId && { categoryId }),
-        ...(search && { search }),
-      });
-      return apiRequest(`/products?${params}`);
-    },
-  });
-};
-
 export const useProduct = (id: string) => {
   return useQuery({
     queryKey: ["product", id],
@@ -193,11 +181,22 @@ export const useAdminLogin = () => {
   });
 };
 
-export const useAdminProducts = (search?: string, category?: string) => {
+export const useAdminProducts = ({
+  search,
+  category,
+  page,
+}: ProductQueryOptions) => {
   return useQuery({
-    queryKey: ["admin_products", search, category],
-    queryFn: () => getAllProducts(search, category),
+    queryKey: ["admin_products", { search, category, page }],
+    queryFn: () => getAllProducts({ search, category, page }),
     enabled: true,
+  });
+};
+
+export const useCategoryPreviews = () => {
+  return useQuery({
+    queryKey: ["category_previews"],
+    queryFn: getCategoryPreviews,
   });
 };
 
@@ -213,7 +212,6 @@ export const useCreateProduct = () => {
   });
 };
 
-// Admin Update Product
 export const useUpdateProduct = () => {
   const queryClient = useQueryClient();
 
@@ -338,16 +336,9 @@ export const useOrderStata = () => {
   });
 };
 
-interface UseOrdersParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-}
-export const useOrders = (params: UseOrdersParams = {}) => {
-  const { page = 1, limit = 10, search } = params;
-  console.log(search);
+export const useOrders = (options: OrderQueryOptions) => {
   return useQuery({
-    queryKey: ["orders", page, limit, search],
-    queryFn: () => getOrders(params),
+    queryKey: ["orders", options],
+    queryFn: () => getAllOrders(options),
   });
 };

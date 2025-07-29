@@ -1,12 +1,21 @@
 import { toast } from "react-toastify";
 import instance from "./real-api";
 import { getAccessToken } from "./cookies";
+import { ProductQueryOptions } from "../app/products/interface";
 
-export const getAllProducts = async (search?: string, category?: string) => {
+export const getAllProducts = async ({
+  search,
+  category,
+  page,
+}: ProductQueryOptions) => {
   try {
     const params = new URLSearchParams();
     if (search) params.append("search", search);
     if (category) params.append("category", category);
+    if (page) params.append("page", String(page));
+
+    params.append("limit", "12");
+
     const res = await instance.get(`/product?${params.toString()}`);
     return res.data;
   } catch (error: any) {
@@ -14,6 +23,16 @@ export const getAllProducts = async (search?: string, category?: string) => {
     toast.error(
       `${error.response?.data?.message || "Failed to fetch products"}`
     );
+  }
+};
+
+export const getCategoryPreviews = async () => {
+  try {
+    const res = await instance.get(`/product/previews`);
+    return res.data;
+  } catch (error: any) {
+    console.error(error);
+    toast.error("Failed to fetch featured products");
   }
 };
 
@@ -186,28 +205,36 @@ export const getOrderStats = async () => {
   }
 };
 
-interface UseOrdersParams {
+export interface OrderQueryOptions {
   page?: number;
   limit?: number;
   search?: string;
+  status?: string;
+  date?: string; // Add date filter
 }
-export const getOrders = async (param: UseOrdersParams) => {
-  try {
-    const { page = 1, limit = 10, search } = param;
-    const searchParams = new URLSearchParams();
-    searchParams.set("page", page.toString());
-    searchParams.set("limit", limit.toString());
 
-    if (search) {
-      searchParams.set("search", search);
-    }
-    const res = await instance.get(`/order/pagination?${searchParams}`);
+export const getAllOrders = async (options: OrderQueryOptions = {}) => {
+  const params = new URLSearchParams();
+
+  if (options.page) params.append("page", String(options.page));
+  if (options.limit) params.append("limit", String(options.limit));
+  if (options.search) params.append("search", options.search);
+
+  if (options.status && options.status !== "ALL") {
+    params.append("status", options.status);
+  }
+  if (options.date) {
+    params.append("date", options.date);
+  }
+
+  try {
+    const res = await instance.get(`/order/pagination?${params.toString()}`);
+    console.log(res.data);
     return res.data;
   } catch (error: any) {
     toast.error(`${error.response.data.message}`);
   }
 };
-
 export const createOrder = async (data: any) => {
   try {
     const res = await instance.post(`/order`, data);
