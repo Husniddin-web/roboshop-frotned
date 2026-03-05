@@ -199,7 +199,7 @@ const Header: React.FC = () => {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="absolute left-0 mt-2 w-56 bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] border border-yellow-500/20 rounded shadow-lg z-50"
+                      className="absolute left-0 mt-2 w-56 bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] border border-yellow-500/20 rounded shadow-lg z-50 overflow-y-auto overflow-x-hidden max-h-[60vh]"
                     >
                       {categories.map((category: any) => (
                         <Link
