@@ -9,7 +9,7 @@ import { useDispatch } from "react-redux";
 import { logout } from "@/lib/features/authSlice";
 import { removeAccessToken } from "@/lib/cookies";
 import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/no-motion";
 
 interface ImageUploadProps {
   images: string[];

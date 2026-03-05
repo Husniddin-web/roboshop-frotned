@@ -21,7 +21,7 @@ import ProductsManager from "./ProductsManager";
 import CategoriesManager from "./CategoriesManager";
 import OrdersAnalytics from "./OrdersAnalytics";
 import ContentManager from "./ContentManager";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/no-motion";
 
 type TabType = "products" | "categories" | "orders";
 

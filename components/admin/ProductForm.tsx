@@ -12,7 +12,7 @@ import { getInitilizeData } from "../../lib/getInitilizeFormData";
 import { showToast } from "../../lib/toast";
 import { logout } from "../../lib/features/authSlice";
 import { removeAccessToken } from "../../lib/cookies";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/no-motion";
 import ImageUpload from "./ImageUpload";
 import { FiX } from "react-icons/fi";
 

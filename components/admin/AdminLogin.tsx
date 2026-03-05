@@ -9,7 +9,7 @@ import { useAdminLogin } from "@/lib/api";
 import { toast } from "react-toastify";
 import { saveAccessToken } from "../../lib/cookies";
 import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/no-motion";
 import {
   FiMail,
   FiLock,

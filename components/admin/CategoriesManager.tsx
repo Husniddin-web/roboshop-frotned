@@ -16,7 +16,7 @@ import { useDispatch } from "react-redux";
 import { logout } from "../../lib/features/authSlice";
 import { removeAccessToken } from "../../lib/cookies";
 import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/no-motion";
 
 export default function CategoriesManager({ search }: { search: string }) {
   const { mutateAsync: deleteCategory } = useDeleteCategory();
