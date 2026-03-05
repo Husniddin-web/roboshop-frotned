@@ -16,6 +16,7 @@ import {
   getAllCategoryForAdmin,
   getAllOrders,
   getAllProducts,
+  getAdminDashboardSummary,
   getCategoryPreviews,
   getLang,
   getOneProductById,
@@ -185,11 +186,19 @@ export const useAdminProducts = ({
   search,
   category,
   page,
+  limit,
 }: ProductQueryOptions) => {
   return useQuery({
-    queryKey: ["admin_products", { search, category, page }],
-    queryFn: () => getAllProducts({ search, category, page }),
+    queryKey: ["admin_products", { search, category, page, limit }],
+    queryFn: () => getAllProducts({ search, category, page, limit }),
     enabled: true,
+  });
+};
+
+export const useAdminDashboardSummary = () => {
+  return useQuery({
+    queryKey: ["admin_dashboard_summary"],
+    queryFn: getAdminDashboardSummary,
   });
 };
 

@@ -7,6 +7,7 @@ export const getAllProducts = async ({
   search,
   category,
   page,
+  limit,
 }: ProductQueryOptions) => {
   try {
     const params = new URLSearchParams();
@@ -14,7 +15,7 @@ export const getAllProducts = async ({
     if (category) params.append("category", category);
     if (page) params.append("page", String(page));
 
-    params.append("limit", "12");
+    params.append("limit", String(limit || 12));
 
     const res = await instance.get(`/product?${params.toString()}`);
     return res.data;
@@ -199,6 +200,20 @@ export const createCategory = async (data: any) => {
 export const getOrderStats = async () => {
   try {
     const res = await instance.get(`/admin/orders`);
+    return res.data;
+  } catch (error: any) {
+    toast.error(`${error.response.data.message}`);
+  }
+};
+
+export const getAdminDashboardSummary = async () => {
+  try {
+    const token = getAccessToken();
+    const res = await instance.get(`/admin/dashboard/summary`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return res.data;
   } catch (error: any) {
     toast.error(`${error.response.data.message}`);
