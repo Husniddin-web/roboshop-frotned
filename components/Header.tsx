@@ -342,7 +342,7 @@ const Header: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: "100%" }}
               transition={{ type: "tween", duration: 0.3 }}
-              className="fixed top-0 right-0 h-full w-80 max-w-[85vw] z-50 md:hidden"
+              className="fixed top-0 right-0 h-full w-80 max-w-[85vw] z-50 md:hidden flex flex-col"
               style={{
                 background: "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)",
               }}
@@ -361,7 +361,7 @@ const Header: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-4 space-y-4">
+              <div className="p-4 space-y-4 overflow-y-auto flex-1">
                 {/* Categories Section */}
                 <div>
                   <button
@@ -384,7 +384,7 @@ const Header: React.FC = () => {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="mt-2 space-y-1 overflow-hidden"
+                        className="mt-2 space-y-1 overflow-y-auto overflow-x-hidden min-h-32 max-h-[50vh] pr-1"
                       >
                         {categories.map((category: any) => (
                           <Link
