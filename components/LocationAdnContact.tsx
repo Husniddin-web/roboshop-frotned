@@ -100,7 +100,7 @@ export default function LocationAndContact() {
               <p>📞 +998 91 797 99 92</p>
               <p>📱 @roboshop_admin</p>
               <p>✉️ info@arduinoshop.uz</p>
-              <p>🌐 roboticshop.uz</p>
+              <p>🌐 robotshop.uz</p>
             </div>
           </div>
         </div>
