@@ -99,17 +99,14 @@ export default function ProductsPage() {
 
             {/* --- FILTER SECTION (Desktop) --- */}
             <div className="lg:w-64 lg:flex-shrink-0">
-              <aside className="hidden lg:block sticky top-24 max-h-[calc(100vh-7rem)] no-scrollbar">
+              <aside className="hidden lg:block sticky top-24 no-scrollbar">
                 {categoryLoading ? (
                   <FilterSkeleton />
                 ) : (
                   <div
                     style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-                    className="bg-gray-800 p-4 rounded-lg border border-yellow-400/30 h-full overflow-y-auto transition-all duration-300"
+                    className="bg-gray-800 p-4 rounded-lg border border-yellow-400/30 min-h-[320px] max-h-[calc(100vh-8rem)] overflow-y-auto transition-all duration-300"
                   >
-                    <h2 className="text-lg font-bold text-yellow-400 mb-4">
-                      {t("filters")}
-                    </h2>
                     <ul className="space-y-2">
                       <li
                         onClick={() => handleCategoryChange("")}
@@ -147,10 +144,7 @@ export default function ProductsPage() {
                   ) : (
                     <div className="fixed inset-0 z-50 bg-black bg-opacity-70 lg:hidden">
                       <div className="absolute left-0 top-0 h-full w-72 bg-gray-900 border-r border-yellow-500 p-4 overflow-y-auto transition-transform duration-300 ease-out">
-                        <div className="flex justify-between items-center mb-4">
-                          <h2 className="text-lg font-bold text-yellow-400">
-                            {t("filters")}
-                          </h2>
+                        <div className="flex justify-end items-center mb-4">
                           <button
                             onClick={() => setIsMobileFilterOpen(false)}
                             className="text-yellow-400 hover:text-yellow-200 transition-colors duration-200"
