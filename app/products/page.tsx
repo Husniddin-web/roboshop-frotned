@@ -10,7 +10,7 @@ import ProductCard from "@/components/ProductCard";
 import { useAdminProducts, useCategory } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { X, Filter } from "lucide-react";
+import { X, Filter, PackageSearch } from "lucide-react";
 import {
   FilterSkeleton,
   MobileFilterSkeleton,
@@ -45,6 +45,11 @@ export default function ProductsPage() {
   const products = productsData?.data || [];
   const totalPages = productsData?.meta?.lastPage || 1;
   const totalProducts = productsData?.meta?.total || 0;
+
+  const formatCategoryName = (name?: string) => {
+    if (!name) return "Unnamed";
+    return name.charAt(0).toLocaleUpperCase(i18n.language) + name.slice(1);
+  };
 
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > totalPages) return;
@@ -81,10 +86,8 @@ export default function ProductsPage() {
       }}
     >
       <div>
-        <div className="mb-10">
-          <Header />
-        </div>
-        <main className="container px-4 py-6 relative ">
+        <Header />
+        <main className="container px-4 pt-24 md:pt-28 pb-8 relative">
           <div className="flex flex-col lg:flex-row gap-6">
             <button
               onClick={() => setIsMobileFilterOpen(true)}
@@ -96,13 +99,13 @@ export default function ProductsPage() {
 
             {/* --- FILTER SECTION (Desktop) --- */}
             <div className="lg:w-64 lg:flex-shrink-0">
-              <aside className="hidden lg:block lg:fixed lg:top-24 lg:w-64 lg:h-[calc(75vh-6rem)] no-scrollbar">
+              <aside className="hidden lg:block sticky top-24 max-h-[calc(100vh-7rem)] no-scrollbar">
                 {categoryLoading ? (
                   <FilterSkeleton />
                 ) : (
                   <div
                     style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-                    className="bg-gray-800 p-4 rounded-lg border border-yellow-400/30 h-full overflow-y-scroll transition-all duration-300"
+                    className="bg-gray-800 p-4 rounded-lg border border-yellow-400/30 h-full overflow-y-auto transition-all duration-300"
                   >
                     <h2 className="text-lg font-bold text-yellow-400 mb-4">
                       {t("filters")}
@@ -128,7 +131,7 @@ export default function ProductsPage() {
                               : "text-yellow-100 hover:text-yellow-300 hover:bg-yellow-400/10"
                           }`}
                         >
-                          {cat?.translations?.[0]?.name || "Unnamed"}
+                          {formatCategoryName(cat?.translations?.[0]?.name)}
                         </li>
                       ))}
                     </ul>
@@ -176,7 +179,7 @@ export default function ProductsPage() {
                                   : "text-yellow-100 hover:text-yellow-300 hover:bg-yellow-400/10"
                               }`}
                             >
-                              {cat?.translations?.[0]?.name || "Unnamed"}
+                              {formatCategoryName(cat?.translations?.[0]?.name)}
                             </li>
                           ))}
                         </ul>
@@ -195,7 +198,7 @@ export default function ProductsPage() {
 
             {/* --- PRODUCTS GRID & PAGINATION --- */}
             <div className="flex-1 min-w-0 lg:ml-0">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 mt-1 md:mt-2">
                 <div>
                   <h1 className="text-2xl font-bold text-yellow-400 mb-1">
                     {search
@@ -227,8 +230,13 @@ export default function ProductsPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 text-yellow-300">
-                  <p>{t("no.products.found")}</p>
+                <div className="py-14 px-4 border border-yellow-400/20 rounded-xl bg-yellow-400/5">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <PackageSearch className="w-14 h-14 text-yellow-400 mb-3" />
+                    <p className="text-yellow-300 text-lg font-semibold">
+                      {t("no.products.found")}
+                    </p>
+                  </div>
                 </div>
               )}
 
