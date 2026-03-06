@@ -1,4 +1,4 @@
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import instance from "./real-api";
 import { getAccessToken } from "./cookies";
 import { ProductQueryOptions } from "../app/products/interface";

@@ -1,59 +1,33 @@
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import "../styles/globals.css";
+import { toast } from "sonner";
 
 export const showToast = {
   success: (message: string) => {
     toast.success(message, {
-      position: "top-right",
-      autoClose: 1000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: false,
-      draggable: true,
-      theme: "colored",
+      duration: 1000,
       className: "toast-success-yellow",
     });
   },
 
   error: (message: string) => {
     toast.error(message, {
-      position: "top-right",
-      autoClose: 2000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: false,
-      draggable: true,
+      duration: 2000,
     });
   },
 
   warning: (message: string) => {
     toast.warning(message, {
-      position: "top-right",
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
+      duration: 3000,
     });
   },
 
   info: (message: string) => {
     toast.info(message, {
-      position: "top-right",
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
+      duration: 3000,
     });
   },
 
   loading: (message: string) => {
-    return toast.loading(message, {
-      position: "top-right",
-      // spinner color set globally in CSS
-    });
+    return toast.loading(message);
   },
 
   update: (
@@ -61,16 +35,15 @@ export const showToast = {
     type: "success" | "error" | "warning" | "info",
     message: string
   ) => {
-    toast.update(toastId, {
-      render: message,
-      type,
-      isLoading: false,
-      autoClose: 1000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: false,
-      draggable: true,
-      className: type === "success" ? "toast-success-yellow" : "",
-    });
+    const options = {
+      id: toastId,
+      duration: 1000,
+      className: type === "success" ? "toast-success-yellow" : undefined,
+    };
+
+    if (type === "success") toast.success(message, options);
+    else if (type === "error") toast.error(message, options);
+    else if (type === "warning") toast.warning(message, options);
+    else toast.info(message, options);
   },
 };

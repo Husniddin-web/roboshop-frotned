@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { loginSuccess, setLoading } from "@/lib/features/authSlice";
 import { useAdminLogin } from "@/lib/api";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { saveAccessToken } from "../../lib/cookies";
 import { useTranslation } from "react-i18next";
 import { motion } from "@/lib/no-motion";
