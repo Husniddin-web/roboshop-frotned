@@ -24,10 +24,21 @@ import OrdersAnalytics from "./OrdersAnalytics";
 import ContentManager from "./ContentManager";
 import DashboardOverview from "./DashboardOverview";
 
-type TabType = "dashboard" | "products" | "categories" | "orders";
+export type TabType = "dashboard" | "products" | "categories" | "orders";
 
-export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<TabType>("dashboard");
+const tabRouteMap: Record<TabType, string> = {
+  dashboard: "/admin",
+  products: "/admin/products",
+  categories: "/admin/categories",
+  orders: "/admin/orders",
+};
+
+export default function AdminDashboard({
+  initialTab = "dashboard",
+}: {
+  initialTab?: TabType;
+}) {
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [searchInput, setSearchInput] = useState("");
   const { admin } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
@@ -36,16 +47,23 @@ export default function AdminDashboard() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
+
+  useEffect(() => {
     const initialSearch = searchParams.get("search") || "";
     setSearchInput(initialSearch);
   }, [searchParams]);
 
-  useEffect(() => {
-    setSearchInput("");
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
     const params = new URLSearchParams(searchParams.toString());
-    params.delete("search");
-    router.push(`?${params.toString()}`);
-  }, [activeTab]);
+    if (tab === "dashboard") {
+      params.delete("search");
+    }
+    const query = params.toString();
+    router.push(`${tabRouteMap[tab]}${query ? `?${query}` : ""}`);
+  };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -242,7 +260,7 @@ export default function AdminDashboard() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabChange(tab.id)}
                 className="w-full text-left px-4 py-4 flex items-center gap-4 rounded-lg transition-all duration-200"
                 style={{
                   border: "none",
