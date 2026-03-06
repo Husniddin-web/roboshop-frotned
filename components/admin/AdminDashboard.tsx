@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { RootState } from "@/lib/store";
 import { logout } from "@/lib/features/authSlice";
+import { useTranslation } from "react-i18next";
 import {
   FiLogOut,
   FiGrid,
@@ -42,6 +43,7 @@ export default function AdminDashboard({
   const [searchInput, setSearchInput] = useState("");
   const { admin } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
+  const { t } = useTranslation();
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -79,10 +81,14 @@ export default function AdminDashboard({
   };
 
   const tabs = [
-    { id: "dashboard" as TabType, label: "Dashboard", icon: FiGrid },
-    { id: "products" as TabType, label: "Products", icon: FiPackage },
-    { id: "categories" as TabType, label: "Categories", icon: FiFolder },
-    { id: "orders" as TabType, label: "Orders", icon: FiBarChart },
+    { id: "dashboard" as TabType, label: t("dashboard"), icon: FiGrid },
+    { id: "products" as TabType, label: t("products"), icon: FiPackage },
+    {
+      id: "categories" as TabType,
+      label: t("categories"),
+      icon: FiFolder,
+    },
+    { id: "orders" as TabType, label: t("orders"), icon: FiBarChart },
   ];
 
   const renderContent = () => {
@@ -140,7 +146,7 @@ export default function AdminDashboard({
               letterSpacing: "2px",
             }}
           >
-            Admin Dashboard
+            {t("admin.dashboard")}
           </h1>
         </div>
 
@@ -156,7 +162,7 @@ export default function AdminDashboard({
               </div>
               <input
                 type="text"
-                placeholder="Search products, categories..."
+                placeholder={t("admin.search.placeholder")}
                 value={searchInput}
                 onChange={handleSearchChange}
                 className="rounded-lg transition-all duration-200"
@@ -225,7 +231,7 @@ export default function AdminDashboard({
             }}
           >
             <FiLogOut size={16} />
-            Logout
+            {t("logout")}
           </button>
         </div>
       </header>
@@ -252,7 +258,7 @@ export default function AdminDashboard({
                 letterSpacing: "1px",
               }}
             >
-              Management
+              {t("management")}
             </h2>
           </div>
 

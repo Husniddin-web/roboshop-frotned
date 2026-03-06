@@ -152,7 +152,7 @@ export default function AdminLogin() {
                 fontFamily: '"Courier New", "Monaco", "Menlo", monospace',
               }}
             >
-              Access the Arduino Shop Admin Panel
+              {t("admin.login.subtitle")}
             </p>
           </motion.div>
 
@@ -339,7 +339,7 @@ export default function AdminLogin() {
                       ease: "linear",
                     }}
                   />
-                  <span>Authenticating...</span>
+                  <span>{t("authenticating")}</span>
                 </>
               ) : (
                 <>
@@ -371,7 +371,7 @@ export default function AdminLogin() {
                   fontFamily: '"Courier New", "Monaco", "Menlo", monospace',
                 }}
               >
-                Secure Admin Access
+                {t("admin.secure.access")}
               </p>
               <p
                 className="text-xs mt-1"
@@ -380,7 +380,7 @@ export default function AdminLogin() {
                   fontFamily: '"Courier New", "Monaco", "Menlo", monospace',
                 }}
               >
-                Arduino Shop Management System
+                {t("admin.system.name")}
               </p>
             </div>
           </motion.div>

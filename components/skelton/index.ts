@@ -4,7 +4,7 @@ export { SkeletonButton } from "./SkeletonButton";
 export { SkeletonImage } from "./SkeletonImage";
 export { SkeletonCard } from "./SkeletonCard";
 export { ProductDetailSkeleton } from "./ProductDetailSkeleton";
-export { ProductCardSkeleton } from "./ProductCardSkeleton";
+export { default as ProductCardSkeleton } from "./ProductCardSkeleton";
 export { ProductGridSkeleton } from "./ProductGridSkeleton";
 export { FilterSkeleton } from "./FilterSkelton";
 export { MobileFilterSkeleton } from "./MobileFilterSkelton";
