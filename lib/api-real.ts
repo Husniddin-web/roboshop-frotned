@@ -94,7 +94,12 @@ export const getAllCategory = async () => {
 
 export const getAllCategoryForAdmin = async (search: string) => {
   try {
-    const res = await instance.get(`/category/admin?search=${search}`);
+    const token = getAccessToken();
+    const res = await instance.get(`/category/admin?search=${search}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return res.data.data || { data: [] };
   } catch (error: any) {
     toast.error(`${error.response.data.message}`);
@@ -158,7 +163,12 @@ export const getOneProductById = async (id: string) => {
 
 export const getOneProductByIdForAdmin = async (id: string) => {
   try {
-    const res = await instance.get(`/product/admin/${id}`);
+    const token = getAccessToken();
+    const res = await instance.get(`/product/admin/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return res.data;
   } catch (error: any) {
     toast.error(`${error.response.data.message}`);
@@ -199,7 +209,12 @@ export const createCategory = async (data: any) => {
 
 export const getOrderStats = async () => {
   try {
-    const res = await instance.get(`/admin/orders`);
+    const token = getAccessToken();
+    const res = await instance.get(`/admin/orders`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return res.data;
   } catch (error: any) {
     toast.error(`${error.response.data.message}`);
@@ -243,7 +258,12 @@ export const getAllOrders = async (options: OrderQueryOptions = {}) => {
   }
 
   try {
-    const res = await instance.get(`/order/pagination?${params.toString()}`);
+    const token = getAccessToken();
+    const res = await instance.get(`/order/pagination?${params.toString()}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     console.log(res.data);
     return res.data;
   } catch (error: any) {
