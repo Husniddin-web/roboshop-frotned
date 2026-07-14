@@ -7,7 +7,7 @@ import {
   useUpdateProduct,
   useDeleteProduct,
 } from "@/lib/api";
-import { FiPlus, FiEdit, FiTrash2, FiImage } from "react-icons/fi";
+import { FiPlus, FiEdit, FiTrash2 } from "react-icons/fi";
 import { showToast } from "@/lib/toast";
 import { useDispatch } from "react-redux";
 import { logout } from "../../lib/features/authSlice";
@@ -15,13 +15,16 @@ import { removeAccessToken } from "../../lib/cookies";
 import { useTranslation } from "react-i18next";
 import { motion } from "@/lib/no-motion";
 import ProductForm from "./ProductForm";
+import ConfirmDialog from "./ConfirmDialog";
 
 export default function ProductsManager({ search }: { search: string }) {
   const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const itemsPerPage = 10; // We'll use this for the 'limit'
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const itemsPerPage = 10;
 
   // --- 1. UPDATED DATA FETCHING ---
   // Pass the current page and item limit directly to the hook.
@@ -42,27 +45,30 @@ export default function ProductsManager({ search }: { search: string }) {
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
 
-  const handleDelete = async (id: string) => {
-    if (confirm(t("delete.confirm"))) {
-      const toastId = showToast.loading(t("deleting.product"));
-      try {
-        const res = await deleteProductMutation.mutateAsync(id);
-        if (res.status === 200) {
-          showToast.update(
-            toastId,
-            "success",
-            t("product.deleted.successfully")
-          );
-        } else {
-          dispatch(logout());
-          removeAccessToken();
-          showToast.update(toastId, "error", t("admin.relogin"));
-        }
-      } catch {
+  const handleDeleteClick = (id: string) => {
+    setDeletingId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingId) return;
+    const toastId = showToast.loading(t("deleting.product"));
+    try {
+      const res = await deleteProductMutation.mutateAsync(deletingId);
+      if (res.status === 200) {
+        showToast.update(toastId, "success", t("product.deleted.successfully"));
+      } else {
         dispatch(logout());
         removeAccessToken();
-        showToast.update(toastId, "error", t("delete.failed"));
+        showToast.update(toastId, "error", t("admin.relogin"));
       }
+    } catch {
+      dispatch(logout());
+      removeAccessToken();
+      showToast.update(toastId, "error", t("delete.failed"));
+    } finally {
+      setShowDeleteConfirm(false);
+      setDeletingId(null);
     }
   };
 
@@ -107,7 +113,7 @@ export default function ProductsManager({ search }: { search: string }) {
             setEditingProduct(null);
             setShowForm(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-white font-bold uppercase transition-transform duration-200 hover:scale-105"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-black font-bold uppercase transition-transform duration-200 hover:scale-105"
         >
           <FiPlus size={18} />
           {t("add.product")}
@@ -208,7 +214,7 @@ export default function ProductsManager({ search }: { search: string }) {
                         <FiEdit size={16} />
                       </motion.button>
                       <motion.button
-                        onClick={() => handleDelete(product.id)}
+                        onClick={() => handleDeleteClick(product.id)}
                         className="p-2 rounded-md bg-red-900/50 text-red-400"
                         title={t("delete")}
                         whileHover={{
@@ -261,6 +267,18 @@ export default function ProductsManager({ search }: { search: string }) {
           }}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title={t("delete.confirm")}
+        message="Mahsulot o'chirilishi bilan bog'liq barcha ma'lumotlar ham o'chiriladi. Bu amal qaytarilmaydi!"
+        confirmText={t("delete")}
+        cancelText="Bekor qilish"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => { setShowDeleteConfirm(false); setDeletingId(null); }}
+        loading={deleteProductMutation.isPending}
+        danger
+      />
     </motion.div>
   );
 }

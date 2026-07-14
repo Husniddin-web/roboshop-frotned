@@ -2,7 +2,13 @@
 
 import type React from "react";
 import { useState } from "react";
-import { useOrders, useOrderStata } from "../../lib/api";
+import {
+  useOrders,
+  useOrderStata,
+  useDeleteOrder,
+  useUpdateOrderStatus,
+  useDeleteAllOrders,
+} from "../../lib/api";
 import { motion, AnimatePresence } from "@/lib/no-motion";
 import { useTranslation } from "react-i18next";
 import {
@@ -19,9 +25,12 @@ import {
   FiCalendar,
   FiDollarSign,
   FiRefreshCw,
+  FiTrash2,
+  FiSave,
 } from "react-icons/fi";
 import LoadingOrders from "../LoadingOrders";
 import NoOrders from "../NoOrders";
+import ConfirmDialog from "./ConfirmDialog";
 
 interface OrderItem {
   id: string;
@@ -61,9 +70,15 @@ export default function OrdersAnalytics({ search }: { search: string }) {
   const [dateFilter, setDateFilter] = useState<string>("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingStatus, setEditingStatus] = useState<string>("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
 
   // --- DATA FETCHING ---
   const { data: stats = [], isLoading: statsLoading } = useOrderStata();
+  const deleteOrderMutation = useDeleteOrder();
+  const updateStatusMutation = useUpdateOrderStatus();
+  const deleteAllMutation = useDeleteAllOrders();
 
   const { data: ordersResponse, isLoading: orderLoading } = useOrders({
     page: currentPage,
@@ -88,7 +103,7 @@ export default function OrdersAnalytics({ search }: { search: string }) {
     value: any
   ) => {
     updater(value);
-    setCurrentPage(1); // Reset to page 1 whenever any filter changes
+    setCurrentPage(1);
   };
 
   const clearFilters = () => {
@@ -99,12 +114,32 @@ export default function OrdersAnalytics({ search }: { search: string }) {
 
   const openOrderModal = (order: Order) => {
     setSelectedOrder(order);
+    setEditingStatus(order.status);
     setIsModalOpen(true);
   };
 
   const closeOrderModal = () => {
     setSelectedOrder(null);
     setIsModalOpen(false);
+    setShowDeleteConfirm(false);
+  };
+
+  const handleUpdateStatus = async () => {
+    if (!selectedOrder || editingStatus === selectedOrder.status) return;
+    await updateStatusMutation.mutateAsync({ id: selectedOrder.id, status: editingStatus });
+    setSelectedOrder({ ...selectedOrder, status: editingStatus as Order["status"] });
+  };
+
+  const handleDeleteOrder = async () => {
+    if (!selectedOrder) return;
+    await deleteOrderMutation.mutateAsync(selectedOrder.id);
+    setShowDeleteConfirm(false);
+    closeOrderModal();
+  };
+
+  const handleDeleteAll = async () => {
+    await deleteAllMutation.mutateAsync();
+    setShowDeleteAllConfirm(false);
   };
 
   const getPageNumbers = () => {
@@ -131,9 +166,19 @@ export default function OrdersAnalytics({ search }: { search: string }) {
       transition={{ duration: 0.5 }}
       className="space-y-6"
     >
-      <h2 className="text-2xl font-bold text-white font-mono uppercase tracking-wider">
-        {t("orders.analytics")}
-      </h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-white font-mono uppercase tracking-wider">
+          {t("orders.analytics")}
+        </h2>
+        <motion.button
+          onClick={() => setShowDeleteAllConfirm(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 border border-red-500/40 text-red-400 font-mono text-sm font-semibold hover:bg-red-600/40 transition-colors"
+          whileTap={{ scale: 0.95 }}
+        >
+          <FiTrash2 size={16} />
+          Hammasini o'chirish
+        </motion.button>
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -420,12 +465,20 @@ export default function OrdersAnalytics({ search }: { search: string }) {
                           {selectedOrder.phoneNumber}
                         </span>
                       </div>
-                      <div className="flex items-start gap-2">
-                        <FiMapPin size={16} className="text-gray-400 mt-0.5" />
-                        <span className="text-white font-mono">
-                          {selectedOrder.address}
-                        </span>
-                      </div>
+                      {selectedOrder.address && (
+                        <div className="flex items-start gap-2">
+                          <FiMapPin size={16} className="text-gray-400 mt-0.5" />
+                          <span className="text-white font-mono">
+                            {selectedOrder.address}
+                          </span>
+                        </div>
+                      )}
+                      {selectedOrder.notes && (
+                        <div className="flex items-start gap-2">
+                          <span className="text-gray-400 font-mono text-sm">📝</span>
+                          <span className="text-gray-300 font-mono text-sm">{selectedOrder.notes}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="p-4 rounded-lg bg-white/5 border border-white/10">
@@ -441,30 +494,42 @@ export default function OrdersAnalytics({ search }: { search: string }) {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-400 font-mono">Status:</span>
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-semibold font-mono uppercase ${
-                            selectedOrder.status === "PENDING"
-                              ? "bg-yellow-900 text-yellow-300"
-                              : "bg-green-900 text-green-300"
-                          }`}
-                        >
-                          {selectedOrder.status}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
                         <span className="text-gray-400 font-mono">Total:</span>
                         <span className="text-xl font-bold text-green-500 font-mono">
-                          {Number.parseFloat(
-                            selectedOrder.totalAmount
-                          ).toLocaleString()}{" "}
-                          UZS
+                          {Number.parseFloat(selectedOrder.totalAmount).toLocaleString()} UZS
                         </span>
+                      </div>
+                      {/* Status Changer */}
+                      <div className="space-y-2 pt-2 border-t border-white/10">
+                        <span className="text-gray-400 font-mono text-sm">Status o'zgartirish:</span>
+                        <div className="flex gap-2">
+                          <select
+                            value={editingStatus}
+                            onChange={(e) => setEditingStatus(e.target.value)}
+                            className="flex-1 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white font-mono text-sm"
+                          >
+                            <option value="PENDING">⏳ PENDING</option>
+                            <option value="CONFIRMED">✅ CONFIRMED</option>
+                            <option value="PROCESSING">⚙️ PROCESSING</option>
+                            <option value="SHIPPED">🚚 SHIPPED</option>
+                            <option value="DELIVERED">📦 DELIVERED</option>
+                            <option value="CANCELLED">❌ CANCELLED</option>
+                          </select>
+                          <motion.button
+                            onClick={handleUpdateStatus}
+                            disabled={updateStatusMutation.isPending || editingStatus === selectedOrder.status}
+                            className="px-3 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white font-mono text-sm font-semibold transition-colors disabled:opacity-40 flex items-center gap-1"
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <FiSave size={14} />
+                            {updateStatusMutation.isPending ? "..." : "Saqlash"}
+                          </motion.button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+                <div className="p-4 rounded-lg bg-white/5 border border-white/10 mb-4">
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white font-mono">
                     <FiPackage size={20} />
                     Order Items ({selectedOrder.orderItems.length})
@@ -486,20 +551,13 @@ export default function OrdersAnalytics({ search }: { search: string }) {
                             <div className="flex items-center gap-4 text-sm text-gray-400 font-mono">
                               <span>Qty: {item.quantity}</span>
                               <span>
-                                @{" "}
-                                {Number.parseFloat(
-                                  item.product.price
-                                ).toLocaleString()}{" "}
-                                UZS
+                                @ {Number.parseFloat(item.product.price).toLocaleString()} UZS
                               </span>
                             </div>
                           </div>
                           <div className="text-right">
                             <span className="text-lg font-bold text-green-500 font-mono">
-                              {(
-                                Number.parseFloat(item.price) * item.quantity
-                              ).toLocaleString()}{" "}
-                              UZS
+                              {(Number.parseFloat(item.price) * item.quantity).toLocaleString()} UZS
                             </span>
                           </div>
                         </div>
@@ -507,11 +565,48 @@ export default function OrdersAnalytics({ search }: { search: string }) {
                     ))}
                   </div>
                 </div>
+                {/* Delete Order Button */}
+                <div className="flex justify-end">
+                  <motion.button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 border border-red-500/40 text-red-400 font-mono text-sm font-semibold hover:bg-red-600/40 transition-colors"
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <FiTrash2 size={16} />
+                    Buyurtmani o'chirish
+                  </motion.button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Confirm: Delete single order */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Buyurtmani o'chirish"
+        message={`#${selectedOrder?.id.slice(-6)} buyurtma o'chirilsin. Bu amal qaytarilmaydi!`}
+        confirmText="Ha, o'chirish"
+        cancelText="Bekor qilish"
+        onConfirm={handleDeleteOrder}
+        onCancel={() => setShowDeleteConfirm(false)}
+        loading={deleteOrderMutation.isPending}
+        danger
+      />
+
+      {/* Confirm: Delete all orders */}
+      <ConfirmDialog
+        isOpen={showDeleteAllConfirm}
+        title="BARCHA Buyurtmalarni O'chirish"
+        message="Tizimda mavjud bo'lgan BARCHA buyurtmalar o'chiriladi. Bu amal hech qanday tarzda qaytarib bo'lmaydi!"
+        confirmText="Ha, hammasini o'chirish"
+        cancelText="Bekor qilish"
+        onConfirm={handleDeleteAll}
+        onCancel={() => setShowDeleteAllConfirm(false)}
+        loading={deleteAllMutation.isPending}
+        danger
+      />
     </motion.div>
   );
 }

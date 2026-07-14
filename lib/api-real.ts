@@ -92,17 +92,24 @@ export const getAllCategory = async () => {
   }
 };
 
-export const getAllCategoryForAdmin = async (search: string) => {
+export const getAllCategoryForAdmin = async (
+  search: string,
+  page: number = 1,
+  limit: number = 10
+) => {
   try {
     const token = getAccessToken();
-    const res = await instance.get(`/category/admin?search=${search}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return res.data.data || { data: [] };
+    const res = await instance.get(
+      `/category/admin?search=${search}&page=${page}&limit=${limit}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return res.data;
   } catch (error: any) {
-    toast.error(`${error.response.data.message}`);
+    toast.error(`${error.response?.data?.message || "Failed to fetch categories"}`);
   }
 };
 
@@ -279,6 +286,44 @@ export const createOrder = async (data: any) => {
   }
 };
 
+export const deleteOrder = async (id: string) => {
+  try {
+    const token = getAccessToken();
+    const res = await instance.delete(`/order/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  } catch (error: any) {
+    toast.error(`${error.response?.data?.message || "O'chirishda xatolik"}`);
+  }
+};
+
+export const updateOrderStatus = async (id: string, status: string) => {
+  try {
+    const token = getAccessToken();
+    const res = await instance.patch(
+      `/order/${id}/status`,
+      { status },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return res.data;
+  } catch (error: any) {
+    toast.error(`${error.response?.data?.message || "Statusni yangilashda xatolik"}`);
+  }
+};
+
+export const deleteAllOrders = async () => {
+  try {
+    const token = getAccessToken();
+    const res = await instance.delete(`/order/all`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  } catch (error: any) {
+    toast.error(`${error.response?.data?.message || "Barcha buyurtmalarni o'chirishda xatolik"}`);
+  }
+};
+
 export const deleteCategory = async (id: string) => {
   try {
     const token = getAccessToken();
@@ -296,10 +341,9 @@ export const deleteCategory = async (id: string) => {
 
 export const getLang = async () => {
   try {
-    const res = await instance.delete(`/language`);
+    const res = await instance.get(`/language`);
     return res.data;
   } catch (error: any) {
     console.log(error);
-    // toast.error(`${error.response.data.message}`);
   }
 };

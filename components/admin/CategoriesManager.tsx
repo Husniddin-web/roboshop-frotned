@@ -2,8 +2,8 @@
 
 import type React from "react";
 
-import { useState } from "react";
-import { FiPlus, FiEdit, FiTrash2 } from "react-icons/fi";
+import { useEffect, useState } from "react";
+import { FiPlus, FiEdit, FiTrash2, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { showToast } from "@/lib/toast";
 import {
   useCategoryForAdmin,
@@ -17,35 +17,50 @@ import { logout } from "../../lib/features/authSlice";
 import { removeAccessToken } from "../../lib/cookies";
 import { useTranslation } from "react-i18next";
 import { motion } from "@/lib/no-motion";
+import ConfirmDialog from "./ConfirmDialog";
 
 export default function CategoriesManager({ search }: { search: string }) {
-  const { mutateAsync: deleteCategory } = useDeleteCategory();
+  const { mutateAsync: deleteCategory, isPending: isDeleting } = useDeleteCategory();
   const dispatch = useDispatch();
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [page, setPage] = useState(1);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const limit = 10;
 
   const { t } = useTranslation();
 
-  const { data: category } = useCategoryForAdmin(search);
+  const { data: categoryData } = useCategoryForAdmin(search, page, limit);
+  const categories: any[] = categoryData?.data || [];
+  const totalPages = categoryData?.meta?.lastPage || 1;
 
-  const handleDelete = async (id: string) => {
-    if (confirm(t("delete.confirm"))) {
-      const deleteToastId = showToast.loading(t("deleting.category"));
-      try {
-        const res = await deleteCategory({ id });
-        if (res?.status == 200) {
-          showToast.update(
-            deleteToastId,
-            "success",
-            t("category.deleted.successfully")
-          );
-        } else {
-          dispatch(logout());
-          removeAccessToken();
-        }
-      } catch (error) {
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
+  const handleDeleteClick = (id: string) => {
+    setDeletingId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingId) return;
+    const deleteToastId = showToast.loading(t("deleting.category"));
+    try {
+      const res = await deleteCategory({ id: deletingId });
+      if (res?.status == 200) {
+        showToast.update(deleteToastId, "success", t("category.deleted.successfully"));
+      } else {
+        dispatch(logout());
+        removeAccessToken();
         showToast.update(deleteToastId, "error", t("delete.failed"));
       }
+    } catch (error) {
+      showToast.update(deleteToastId, "error", t("delete.failed"));
+    } finally {
+      setShowDeleteConfirm(false);
+      setDeletingId(null);
     }
   };
 
@@ -154,7 +169,14 @@ export default function CategoriesManager({ search }: { search: string }) {
               </tr>
             </thead>
             <tbody>
-              {category?.map((category: any, index: number) => (
+              {categories.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="p-8 text-center text-gray-500 font-mono">
+                    Kategoriyalar topilmadi
+                  </td>
+                </tr>
+              ) : (
+              categories.map((category: any, index: number) => (
                 <motion.tr
                   key={category.id}
                   className="border-b transition-colors duration-200"
@@ -216,7 +238,7 @@ export default function CategoriesManager({ search }: { search: string }) {
                         <FiEdit size={16} />
                       </motion.button>
                       <motion.button
-                        onClick={() => handleDelete(category.id)}
+                        onClick={() => handleDeleteClick(category.id)}
                         className="p-2 rounded-md transition-all duration-200"
                         style={{
                           background: "rgba(239, 68, 68, 0.1)",
@@ -234,11 +256,35 @@ export default function CategoriesManager({ search }: { search: string }) {
                     </div>
                   </td>
                 </motion.tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex justify-center items-center gap-4">
+          <button
+            onClick={() => setPage((p) => Math.max(p - 1, 1))}
+            disabled={page === 1}
+            className="p-2 rounded-lg border border-white/20 text-white bg-white/5 hover:bg-white/10 disabled:opacity-40 transition-colors"
+          >
+            <FiChevronLeft size={18} />
+          </button>
+          <span className="text-white font-mono text-sm">
+            {t("page")} {page} / {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+            disabled={page === totalPages}
+            className="p-2 rounded-lg border border-white/20 text-white bg-white/5 hover:bg-white/10 disabled:opacity-40 transition-colors"
+          >
+            <FiChevronRight size={18} />
+          </button>
+        </div>
+      )}
 
       {showForm && (
         <CategoryForm
@@ -249,6 +295,18 @@ export default function CategoriesManager({ search }: { search: string }) {
           }}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title={t("delete.confirm")}
+        message="Kategoriya o'chirilishi bilan bog'liq barcha ma'lumotlar ham o'chiriladi. Bu amal qaytarilmaydi!"
+        confirmText={t("delete")}
+        cancelText="Bekor qilish"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => { setShowDeleteConfirm(false); setDeletingId(null); }}
+        loading={isDeleting}
+        danger
+      />
     </motion.div>
   );
 }

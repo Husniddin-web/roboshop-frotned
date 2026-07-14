@@ -27,6 +27,9 @@ import {
   updateCategory,
   updateProduct,
   uploadImage,
+  deleteOrder,
+  updateOrderStatus,
+  deleteAllOrders,
 } from "./api-real";
 import { ProductQueryOptions } from "../app/products/interface";
 
@@ -316,10 +319,10 @@ export const useCategory = () => {
   });
 };
 
-export const useCategoryForAdmin = (search: string) => {
+export const useCategoryForAdmin = (search: string, page: number = 1, limit: number = 10) => {
   return useQuery({
-    queryKey: ["categories", search],
-    queryFn: () => getAllCategoryForAdmin(search),
+    queryKey: ["categories", search, page, limit],
+    queryFn: () => getAllCategoryForAdmin(search, page, limit),
   });
 };
 
@@ -349,5 +352,38 @@ export const useOrders = (options: OrderQueryOptions) => {
   return useQuery({
     queryKey: ["orders", options],
     queryFn: () => getAllOrders(options),
+  });
+};
+
+export const useDeleteOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteOrder(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
+  });
+};
+
+export const useUpdateOrderStatus = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      updateOrderStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
+  });
+};
+
+export const useDeleteAllOrders = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => deleteAllOrders(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders_stats"] });
+      queryClient.invalidateQueries({ queryKey: ["admin_dashboard_summary"] });
+    },
   });
 };
