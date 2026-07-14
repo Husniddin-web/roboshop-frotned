@@ -6,7 +6,7 @@ import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/lib/store";
 import { clearCart, setCartOpen } from "@/lib/features/cartSlice";
 import { useCreateOrder } from "@/lib/api";
-import { FiX, FiMapPin } from "react-icons/fi";
+import { FiX } from "react-icons/fi";
 import { showToast } from "@/lib/toast";
 import { isValidUzbekPhoneNumber } from "../lib/utils";
 import { useTranslation } from "react-i18next";
@@ -39,51 +39,16 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
     notes: "",
     region: "",
     address: "",
-    location: "",
-    gps_coordinates: "",
   });
-
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
 
   const { items, total } = useSelector((state: RootState) => state.cart);
   const dispatch = useDispatch();
   const { t } = useTranslation();
   const createOrderMutation = useCreateOrder();
 
-  const handleGetLocation = () => {
-    if (!navigator.geolocation) {
-      showToast.error("Geolocation is not supported by this browser");
-      return;
-    }
-
-    setIsGettingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        setFormData({
-          ...formData,
-          gps_coordinates: `${latitude},${longitude}`,
-        });
-        setIsGettingLocation(false);
-        showToast.success("Location captured successfully");
-      },
-      (error) => {
-        console.error("Error getting location:", error);
-        setIsGettingLocation(false);
-        showToast.error("Failed to get location. Please try again.");
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 600000,
-      }
-    );
-  };
-
   const getCombinedAddress = () => {
     const regionLabel =
       UZBEKISTAN_REGIONS.find((r) => r.value === formData.region)?.label || "";
-
     return regionLabel;
   };
 
@@ -103,7 +68,6 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
         phoneNumber: formData.phoneNumber,
         notes: formData.notes,
         address: fullAddress,
-        location: formData.gps_coordinates,
         totalAmount: total,
         orderItems: items.map((item) => ({
           productId: item.id,
@@ -168,7 +132,6 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
             />
           </div>
 
-          {/* Phone */}
           <div>
             <label className="block text-sm text-neutral-300 mb-1">
               {t("phone.number")}
@@ -179,9 +142,10 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
                 type="tel"
                 required
                 inputMode="numeric"
+                maxLength={9}
                 value={formData.phoneNumber.slice(4)}
                 onChange={(e) => {
-                  const digits = e.target.value.replace(/\D/g, "");
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 9);
                   setFormData({ ...formData, phoneNumber: `+998${digits}` });
                 }}
                 className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder:text-neutral-500"
@@ -221,7 +185,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
             </select>
           </div>
 
-          {formData.region != "tashkent_city" ? (
+          {formData.region !== "tashkent_city" ? (
             <div>
               <label className="block text-sm text-neutral-300 mb-1">
                 To'liq manzil
@@ -237,40 +201,20 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
                 className="w-full px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-md text-sm text-white resize-vertical focus:outline-none focus:ring-2 focus:ring-white placeholder:text-neutral-500"
               />
             </div>
-          ) : null}
-
-          {/* GPS Location */}
-          {formData.region === "tashkent_city" && (
+          ) : (
             <div>
               <label className="block text-sm text-neutral-300 mb-1">
-                Joylashuv (ixtiyoriy)
+                To'liq manzil (ixtiyoriy)
               </label>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="text"
-                  value={formData.gps_coordinates}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      gps_coordinates: e.target.value,
-                    })
-                  }
-                  placeholder="41.2995,69.2401 yoki bosh qoldiring"
-                  className="flex-1 px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-white placeholder:text-neutral-500"
-                />
-                <button
-                  type="button"
-                  onClick={handleGetLocation}
-                  disabled={isGettingLocation}
-                  className="px-4 py-3 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded-md text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                >
-                  <FiMapPin size={16} />
-                  <span>{isGettingLocation ? "..." : "GPS"}</span>
-                </button>
-              </div>
-              <small className="text-neutral-500 text-xs mt-1 block">
-                Aniq joylashuvni olish uchun "GPS" tugmasini bosing
-              </small>
+              <textarea
+                value={formData.address}
+                onChange={(e) =>
+                  setFormData({ ...formData, address: e.target.value })
+                }
+                rows={2}
+                placeholder="Ko'cha nomi, uy raqami..."
+                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-md text-sm text-white resize-vertical focus:outline-none focus:ring-2 focus:ring-white placeholder:text-neutral-500"
+              />
             </div>
           )}
 
