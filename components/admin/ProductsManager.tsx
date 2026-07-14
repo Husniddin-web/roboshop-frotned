@@ -14,13 +14,12 @@ import { logout } from "../../lib/features/authSlice";
 import { removeAccessToken } from "../../lib/cookies";
 import { useTranslation } from "react-i18next";
 import { motion } from "@/lib/no-motion";
-import ProductForm from "./ProductForm";
+import { useRouter } from "next/navigation";
 import ConfirmDialog from "./ConfirmDialog";
 
 export default function ProductsManager({ search }: { search: string }) {
   const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-  const [showForm, setShowForm] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<string | null>(null);
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -109,10 +108,7 @@ export default function ProductsManager({ search }: { search: string }) {
           {t("products.management")}
         </h2>
         <button
-          onClick={() => {
-            setEditingProduct(null);
-            setShowForm(true);
-          }}
+          onClick={() => router.push("/admin/products/create")}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-black font-bold uppercase transition-transform duration-200 hover:scale-105"
         >
           <FiPlus size={18} />
@@ -202,11 +198,8 @@ export default function ProductsManager({ search }: { search: string }) {
                   <td className="p-4">
                     <div className="flex gap-3">
                       <motion.button
-                        onClick={() => {
-                          setEditingProduct(product.id);
-                          setShowForm(true);
-                        }}
-                        className="p-2 rounded-md bg-neutral-700 text-white"
+                        onClick={() => router.push(`/admin/products/${product.id}/edit`)}
+                        className="p-2 rounded-md bg-white/5 text-white border border-white/10"
                         title={t("edit")}
                         whileHover={{ scale: 1.1, backgroundColor: "#555" }}
                         whileTap={{ scale: 0.95 }}
@@ -256,16 +249,6 @@ export default function ProductsManager({ search }: { search: string }) {
             {t("next")}
           </button>
         </div>
-      )}
-
-      {showForm && (
-        <ProductForm
-          productId={editingProduct}
-          onClose={() => {
-            setShowForm(false);
-            setEditingProduct(null);
-          }}
-        />
       )}
 
       <ConfirmDialog
