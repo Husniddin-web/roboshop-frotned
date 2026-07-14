@@ -193,22 +193,8 @@ export default function ProductPageForm({
       {/* ── Body ────────────────────────────────────────── */}
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* ── Left column: images + meta ── */}
+          {/* ── Left column: meta ── */}
           <div className="lg:col-span-1 space-y-5">
-            {/* Images */}
-            <div className="p-5 rounded-2xl bg-white/3 border border-white/8">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest font-mono mb-4">
-                Rasmlar
-              </p>
-              <ImageUpload
-                images={formData.images}
-                onImagesChange={(imgs: any) =>
-                  setFormData((p) => ({ ...p, images: imgs }))
-                }
-                maxImages={5}
-              />
-            </div>
-
             {/* Price */}
             <div className="p-5 rounded-2xl bg-white/3 border border-white/8 space-y-4">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest font-mono">
@@ -430,6 +416,17 @@ export default function ProductPageForm({
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Images section in full width below the columns grid */}
+        <div className="mt-6 p-6 rounded-2xl bg-white/3 border border-white/8">
+          <ImageUpload
+            images={formData.images}
+            onImagesChange={(imgs: any) =>
+              setFormData((p) => ({ ...p, images: imgs }))
+            }
+            maxImages={5}
+          />
         </div>
       </form>
     </div>
