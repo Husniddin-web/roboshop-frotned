@@ -7,7 +7,7 @@ import { addToCart } from "@/lib/features/cartSlice";
 import type { Product } from "@/lib/types";
 import { showToast } from "@/lib/toast";
 import { useTranslation } from "react-i18next";
-import { ShoppingBag, Plus, Minus, CheckCircle2 } from "lucide-react";
+import { ShoppingBag, Plus, Minus } from "lucide-react";
 
 interface ProductCardProps {
   product: Product;
@@ -66,12 +66,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           className="object-contain p-2 sm:p-3 group-hover:scale-108 transition-transform duration-500 ease-out"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        
-        {/* Floating In-stock badge */}
-        <div className="absolute top-2 left-2 inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 text-emerald-400 text-[9px] sm:text-[11px] font-medium">
-          <CheckCircle2 size={10} className="sm:w-[11px] sm:h-[11px]" />
-          <span>Mavjud</span>
-        </div>
       </Link>
 
       {/* Product Info */}
