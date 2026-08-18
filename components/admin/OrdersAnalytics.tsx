@@ -431,7 +431,7 @@ export default function OrdersAnalytics({ search }: { search: string }) {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               <div className="p-6 border-b border-white/10 flex justify-between items-center sticky top-0 bg-gray-900/80 backdrop-blur-sm">
                 <h2 className="text-xl font-bold text-white font-mono uppercase tracking-wider">

@@ -33,7 +33,7 @@ const sanitizeProps = (props: Record<string, unknown>) => {
   return cleanProps;
 };
 
-const createMotionTag = (tag: keyof JSX.IntrinsicElements) => {
+const createMotionTag = (tag: any) => {
   return ({ children, ...props }: Record<string, any>) => {
     return React.createElement(tag, sanitizeProps(props), children);
   };
@@ -42,10 +42,12 @@ const createMotionTag = (tag: keyof JSX.IntrinsicElements) => {
 export const motion = new Proxy(
   {},
   {
-    get: (_target, tag: string) => createMotionTag(tag as keyof JSX.IntrinsicElements),
+    get: (_target, tag: string) => createMotionTag(tag),
   }
 ) as Record<string, React.ComponentType<any>>;
 
-export const AnimatePresence = ({ children }: { children: React.ReactNode }) => (
+export const AnimatePresence = ({ children, mode }: { children: React.ReactNode; mode?: string }) => (
   <>{children}</>
 );
+
+

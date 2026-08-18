@@ -1,25 +1,11 @@
-import { motion } from "framer-motion";
-
 export default function LoadingOrders() {
   return (
     <div className="p-12 text-center">
-      <motion.div
-        className="mx-auto"
-        style={{
-          width: "40px",
-          height: "40px",
-          border: "3px solid rgba(255, 255, 255, 0.2)",
-          borderTop: "3px solid #ffffff",
-          borderRadius: "50%",
-        }}
-        animate={{ rotate: 360 }}
-        transition={{
-          duration: 1,
-          repeat: Number.POSITIVE_INFINITY,
-          ease: "linear",
-        }}
+      <div
+        className="mx-auto w-10 h-10 border-3 border-white/20 border-t-amber-400 rounded-full animate-spin"
       />
-      <p className="mt-4 text-neutral-400 font-mono">Loading orders...</p>
+      <p className="mt-4 text-zinc-400 text-sm">Loading orders...</p>
     </div>
   );
 }
+

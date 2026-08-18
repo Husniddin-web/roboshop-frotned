@@ -1,4 +1,3 @@
-// ProductsPage.tsx - FULL UPDATED CODE
 "use client";
 
 import { useEffect, useState } from "react";
@@ -10,12 +9,22 @@ import ProductCard from "@/components/ProductCard";
 import { useAdminProducts, useCategory } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { X, Filter, PackageSearch } from "lucide-react";
+import {
+  X,
+  Filter,
+  PackageSearch,
+  LayoutGrid,
+  SlidersHorizontal,
+  ChevronRight,
+  Sparkles,
+  Search,
+} from "lucide-react";
 import {
   FilterSkeleton,
   MobileFilterSkeleton,
   ProductGridSkeleton,
 } from "../../components/skelton";
+import { getCategoryIcon } from "@/lib/categoryIcons";
 
 export default function ProductsPage() {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -33,14 +42,15 @@ export default function ProductsPage() {
     category,
     page: currentPage,
   });
-  console.log(productsData);
+
   const { data: categories = [], isLoading: categoryLoading } = useCategory();
   const { i18n, t } = useTranslation();
+  const isUz = i18n.language === "uz";
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ["admin_products"] });
     queryClient.invalidateQueries({ queryKey: ["category"] });
-  }, [i18n.language]);
+  }, [i18n.language, queryClient]);
 
   const products = productsData?.data || [];
   const totalPages = productsData?.meta?.lastPage || 1;
@@ -50,6 +60,11 @@ export default function ProductsPage() {
     if (!name) return "Unnamed";
     return name.charAt(0).toLocaleUpperCase(i18n.language) + name.slice(1);
   };
+
+  const activeCategoryObj = categories.find((c: any) => String(c.id) === String(category));
+  const activeCategoryName = activeCategoryObj
+    ? formatCategoryName(activeCategoryObj.translations?.[0]?.name)
+    : "";
 
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > totalPages) return;
@@ -65,6 +80,7 @@ export default function ProductsPage() {
     } else {
       newParams.delete("category");
     }
+    newParams.delete("search");
     newParams.set("page", "1");
     router.push(`/products?${newParams.toString()}`);
     setIsMobileFilterOpen(false);
@@ -76,174 +92,274 @@ export default function ProductsPage() {
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        background: "linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%)",
-        minHeight: "100vh",
-        justifyContent: "space-between",
-      }}
-    >
+    <div className="main-electronics-bg min-h-screen flex flex-col justify-between">
       <div>
         <Header />
-        <main className="container px-4 pt-24 md:pt-28 pb-8 relative">
-          <div className="flex flex-col lg:flex-row gap-6">
+        <main className="container px-4 pt-24 md:pt-28 pb-16 relative z-10">
+          {/* Top Banner / Mobile Filter Toggle */}
+          <div className="flex items-center justify-between gap-4 mb-6 lg:hidden">
             <button
               onClick={() => setIsMobileFilterOpen(true)}
-              className="lg:hidden flex items-center gap-2 text-yellow-400 border border-yellow-400/40 px-3 py-2 rounded mb-8 transition-all duration-200 hover:bg-yellow-400/10"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-amber-400/40 text-amber-400 font-semibold text-sm transition-all"
             >
-              <Filter size={18} />
-              {t("filters")}
+              <SlidersHorizontal size={16} />
+              <span>{t("filters")}</span>
+              {category && (
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              )}
             </button>
 
-            {/* --- FILTER SECTION (Desktop) --- */}
-            <div className="lg:w-64 lg:flex-shrink-0">
-              <aside className="hidden lg:block sticky top-24 no-scrollbar">
-                {categoryLoading ? (
-                  <FilterSkeleton />
-                ) : (
-                  <div
-                    style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-                    className="bg-gray-800 p-4 rounded-lg border border-yellow-400/30 min-h-[320px] max-h-[calc(100vh-8rem)] overflow-y-auto transition-all duration-300"
-                  >
-                    <ul className="space-y-2">
-                      <li
+            {(search || category) && (
+              <button
+                onClick={clearAllFilters}
+                className="text-xs text-zinc-400 hover:text-white underline underline-offset-4"
+              >
+                {t("clear.filters") || "Filtrni tozalash"}
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
+            {/* --- DESKTOP SIDEBAR WITH ICONS --- */}
+            <div className="w-full lg:w-72 lg:flex-shrink-0">
+              <aside className="hidden lg:block sticky top-24">
+                <div className="glass-panel rounded-2xl border border-white/10 p-5 shadow-xl">
+                  {/* Sidebar Header */}
+                  <div className="flex items-center justify-between pb-4 mb-3 border-b border-white/10">
+                    <div className="flex items-center gap-2 text-white font-bold text-sm uppercase tracking-wider">
+                      <SlidersHorizontal size={16} className="text-amber-400" />
+                      <span>{t("categories")}</span>
+                    </div>
+                    {category && (
+                      <button
+                        onClick={clearAllFilters}
+                        className="text-[11px] text-amber-400/80 hover:text-amber-300 transition-colors"
+                      >
+                        {isUz ? "Tozalash" : "Сбросить"}
+                      </button>
+                    )}
+                  </div>
+
+                  {categoryLoading ? (
+                    <FilterSkeleton />
+                  ) : (
+                    <div className="space-y-1 max-h-[calc(100vh-12rem)] overflow-y-auto pr-1">
+                      {/* All Categories Option */}
+                      <button
                         onClick={() => handleCategoryChange("")}
-                        className={`cursor-pointer px-3 py-2 rounded-md text-sm transition-all duration-200 ${
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
                           !category
-                            ? "bg-yellow-400 text-black font-semibold"
-                            : "text-yellow-100 hover:text-yellow-300 hover:bg-yellow-400/10"
+                            ? "bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md shadow-amber-500/20"
+                            : "text-zinc-300 hover:text-white hover:bg-white/5"
                         }`}
                       >
-                        {t("all.categories")}
-                      </li>
-                      {categories.map((cat: any) => (
-                        <li
-                          key={cat.id}
-                          onClick={() => handleCategoryChange(cat.id)}
-                          className={`cursor-pointer px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                            category === cat.id
-                              ? "bg-yellow-400 text-black font-semibold"
-                              : "text-yellow-100 hover:text-yellow-300 hover:bg-yellow-400/10"
-                          }`}
-                        >
-                          {formatCategoryName(cat?.translations?.[0]?.name)}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </aside>
-
-              {/* --- FILTER SECTION (Mobile) --- */}
-              {isMobileFilterOpen && (
-                <>
-                  {categoryLoading ? (
-                    <MobileFilterSkeleton />
-                  ) : (
-                    <div className="fixed inset-0 z-50 bg-black bg-opacity-70 lg:hidden">
-                      <div className="absolute left-0 top-0 h-full w-72 bg-gray-900 border-r border-yellow-500 p-4 overflow-y-auto transition-transform duration-300 ease-out">
-                        <div className="flex justify-end items-center mb-4">
-                          <button
-                            onClick={() => setIsMobileFilterOpen(false)}
-                            className="text-yellow-400 hover:text-yellow-200 transition-colors duration-200"
-                          >
-                            <X />
-                          </button>
+                        <div className="flex items-center gap-2.5">
+                          <LayoutGrid
+                            size={16}
+                            className={!category ? "text-black" : "text-amber-400"}
+                          />
+                          <span>{t("all.categories")}</span>
                         </div>
-                        <ul className="space-y-2">
-                          <li
-                            onClick={() => handleCategoryChange("")}
-                            className={`cursor-pointer px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                              !category
-                                ? "bg-yellow-400 text-black font-semibold"
-                                : "text-yellow-100 hover:text-yellow-300 hover:bg-yellow-400/10"
+                        {!category && <ChevronRight size={14} className="text-black" />}
+                      </button>
+
+                      {/* Dynamic Categories with Icons */}
+                      {categories.map((cat: any) => {
+                        const isCatActive = String(category) === String(cat.id);
+                        const rawName = cat?.translations?.[0]?.name || "";
+                        const formattedName = formatCategoryName(rawName);
+                        const icon = getCategoryIcon(rawName);
+
+                        return (
+                          <button
+                            key={cat.id}
+                            onClick={() => handleCategoryChange(cat.id)}
+                            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 text-left ${
+                              isCatActive
+                                ? "bg-gradient-to-r from-amber-400 to-amber-500 text-black font-bold shadow-md shadow-amber-500/20"
+                                : "text-zinc-300 hover:text-white hover:bg-white/5"
                             }`}
                           >
-                            {t("all.categories")}
-                          </li>
-                          {categories.map((cat: any) => (
-                            <li
-                              key={cat.id}
-                              onClick={() => handleCategoryChange(cat.id)}
-                              className={`cursor-pointer px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                                category === cat.id
-                                  ? "bg-yellow-400 text-black font-semibold"
-                                  : "text-yellow-100 hover:text-yellow-300 hover:bg-yellow-400/10"
-                              }`}
-                            >
-                              {formatCategoryName(cat?.translations?.[0]?.name)}
-                            </li>
-                          ))}
-                        </ul>
-                        <button
-                          onClick={clearAllFilters}
-                          className="mt-6 w-full px-4 py-2 text-sm bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 rounded-lg hover:bg-yellow-400/20 transition-all duration-200"
-                        >
-                          {t("clear.filters")}
-                        </button>
-                      </div>
+                            <div className="flex items-center gap-2.5 truncate">
+                              <span className={isCatActive ? "text-black [&>svg]:text-black" : ""}>
+                                {icon}
+                              </span>
+                              <span className="truncate">{formattedName}</span>
+                            </div>
+
+                            {isCatActive && (
+                              <ChevronRight size={14} className="text-black flex-shrink-0" />
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
-                </>
+                </div>
+              </aside>
+
+              {/* --- MOBILE FILTER DRAWER --- */}
+              {isMobileFilterOpen && (
+                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm lg:hidden flex">
+                  <div className="relative w-4/5 max-w-sm h-full bg-[#0b0f17] border-r border-white/10 p-6 overflow-y-auto flex flex-col justify-between">
+                    <div>
+                      {/* Drawer Header */}
+                      <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
+                        <div className="flex items-center gap-2 font-bold text-white text-base">
+                          <SlidersHorizontal size={18} className="text-amber-400" />
+                          <span>{t("categories")}</span>
+                        </div>
+                        <button
+                          onClick={() => setIsMobileFilterOpen(false)}
+                          className="p-2 rounded-xl bg-white/5 text-zinc-400 hover:text-white"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+
+                      {/* Mobile Category List */}
+                      <div className="space-y-1">
+                        <button
+                          onClick={() => handleCategoryChange("")}
+                          className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                            !category
+                              ? "bg-amber-400 text-black font-bold"
+                              : "text-zinc-300 hover:bg-white/5"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <LayoutGrid
+                              size={17}
+                              className={!category ? "text-black" : "text-amber-400"}
+                            />
+                            <span>{t("all.categories")}</span>
+                          </div>
+                          {!category && <ChevronRight size={15} />}
+                        </button>
+
+                        {categories.map((cat: any) => {
+                          const isCatActive = String(category) === String(cat.id);
+                          const rawName = cat?.translations?.[0]?.name || "";
+                          const formattedName = formatCategoryName(rawName);
+                          const icon = getCategoryIcon(rawName);
+
+                          return (
+                            <button
+                              key={cat.id}
+                              onClick={() => handleCategoryChange(cat.id)}
+                              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm transition-all ${
+                                isCatActive
+                                  ? "bg-amber-400 text-black font-bold"
+                                  : "text-zinc-300 hover:bg-white/5"
+                              }`}
+                            >
+                              <div className="flex items-center gap-3 truncate">
+                                <span className={isCatActive ? "text-black [&>svg]:text-black" : ""}>
+                                  {icon}
+                                </span>
+                                <span className="truncate">{formattedName}</span>
+                              </div>
+                              {isCatActive && <ChevronRight size={15} />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Bottom Clear / Close Button */}
+                    <div className="pt-6 border-t border-white/10">
+                      <button
+                        onClick={clearAllFilters}
+                        className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-amber-400 font-bold text-sm hover:bg-white/10 transition-colors"
+                      >
+                        {t("clear.filters") || "Filtrlarni tozalash"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
 
-            {/* --- PRODUCTS GRID & PAGINATION --- */}
-            <div className="flex-1 min-w-0 lg:ml-0">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 mt-1 md:mt-2">
+            {/* --- PRODUCTS GRID & CONTROLS --- */}
+            <div className="flex-1 min-w-0 w-full">
+              {/* Active Filter Status & Title Bar */}
+              <div className="glass-panel p-5 sm:p-6 rounded-2xl border border-white/10 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-yellow-400 mb-1">
-                    {search
-                      ? `${t("search.results.for")} "${search}"`
-                      : t("all.products")}
-                  </h1>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                      {search
+                        ? `${t("search.results.for")} "${search}"`
+                        : activeCategoryName
+                        ? activeCategoryName
+                        : t("all.products")}
+                    </h1>
+                  </div>
+
                   {!isLoading && (
-                    <p className="text-yellow-200 text-sm">
-                      {totalProducts} {t("products.found")}
+                    <p className="text-xs sm:text-sm text-zinc-400 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>
+                        {totalProducts} {t("products.found") || "ta mahsulot topildi"}
+                      </span>
                     </p>
                   )}
                 </div>
+
                 {(search || category) && !isLoading && (
-                  <button
-                    onClick={clearAllFilters}
-                    className="px-4 py-2 text-sm bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 rounded-lg hover:bg-yellow-400/20 transition-all duration-200"
-                  >
-                    {t("clear.filters")}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={clearAllFilters}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-amber-400 transition-colors"
+                    >
+                      <X size={14} />
+                      <span>{isUz ? "Filtrni bekor qilish" : "Сбросить фильтр"}</span>
+                    </button>
+                  </div>
                 )}
               </div>
 
+              {/* Grid Content */}
               {isLoading ? (
                 <ProductGridSkeleton count={12} />
               ) : products.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
                   {products.map((product: any) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
               ) : (
-                <div className="py-14 px-4 border border-yellow-400/20 rounded-xl bg-yellow-400/5">
-                  <div className="flex flex-col items-center justify-center text-center">
-                    <PackageSearch className="w-14 h-14 text-yellow-400 mb-3" />
-                    <p className="text-yellow-300 text-lg font-semibold">
-                      {t("no.products.found")}
-                    </p>
+                <div className="py-20 px-6 border border-white/10 rounded-2xl glass-panel text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-4 text-amber-400">
+                    <PackageSearch size={32} />
                   </div>
+                  <h3 className="text-lg font-bold text-white mb-1">
+                    {t("no.products.found")}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-zinc-400 max-w-sm mx-auto mb-6">
+                    {isUz
+                      ? "Kiritilgan so'rov bo'yicha hech qanday tovar topilmadi. Boshqa kalit so'z bilan qidirib ko'ring yoki barcha mahsulotlarga o'ting."
+                      : "По вашему запросу товары не найдены. Попробуйте изменить параметры поиска."}
+                  </p>
+                  <button
+                    onClick={clearAllFilters}
+                    className="btn btn-primary px-6 py-2.5 text-xs font-bold"
+                  >
+                    {t("all.products")}
+                  </button>
                 </div>
               )}
 
-              {/* --- PAGINATION CONTROLS (Updated Logic) --- */}
+              {/* Pagination Controls */}
               {!isLoading && totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-8">
+                <div className="flex justify-center items-center gap-2 mt-12">
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 text-sm bg-gray-800 border border-yellow-400/30 text-yellow-400 rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-all duration-200"
+                    className="px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl bg-white/5 border border-white/10 text-zinc-300 hover:text-white hover:bg-white/10 disabled:opacity-40 transition-all"
                   >
                     {t("previous")}
                   </button>
+
                   {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                     let page = i + 1;
                     if (totalPages > 5) {
@@ -256,20 +372,21 @@ export default function ProductsPage() {
                       <button
                         key={page}
                         onClick={() => handlePageChange(page)}
-                        className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
+                        className={`w-10 h-10 rounded-xl text-xs sm:text-sm font-bold transition-all ${
                           currentPage === page
-                            ? "bg-yellow-400 text-black font-semibold"
-                            : "bg-gray-800 border border-yellow-400/30 text-yellow-400 hover:bg-gray-700"
+                            ? "bg-amber-400 text-black shadow-lg shadow-amber-500/25"
+                            : "bg-white/5 border border-white/10 text-zinc-300 hover:text-white hover:bg-white/10"
                         }`}
                       >
                         {page}
                       </button>
                     );
                   })}
+
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 text-sm bg-gray-800 border border-yellow-400/30 text-yellow-400 rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-all duration-200"
+                    className="px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl bg-white/5 border border-white/10 text-zinc-300 hover:text-white hover:bg-white/10 disabled:opacity-40 transition-all"
                   >
                     {t("next")}
                   </button>
@@ -284,3 +401,4 @@ export default function ProductsPage() {
     </div>
   );
 }
+

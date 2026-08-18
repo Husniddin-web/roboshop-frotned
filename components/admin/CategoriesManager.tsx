@@ -383,7 +383,7 @@ function CategoryForm({
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
         transition={{ duration: 0.3 }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
         <h3
           className="text-xl font-bold mb-6"
