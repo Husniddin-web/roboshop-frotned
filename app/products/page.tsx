@@ -15,6 +15,7 @@ import {
   PackageSearch,
   LayoutGrid,
   SlidersHorizontal,
+  ChevronLeft,
   ChevronRight,
   Sparkles,
   Search,
@@ -322,7 +323,7 @@ export default function ProductsPage() {
               {isLoading ? (
                 <ProductGridSkeleton count={12} />
               ) : products.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                   {products.map((product: any) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
@@ -351,45 +352,57 @@ export default function ProductsPage() {
 
               {/* Pagination Controls */}
               {!isLoading && totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-12">
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl bg-white/5 border border-white/10 text-zinc-300 hover:text-white hover:bg-white/10 disabled:opacity-40 transition-all"
-                  >
-                    {t("previous")}
-                  </button>
+                <div className="flex justify-center items-center mt-10 sm:mt-14 px-2">
+                  <div className="inline-flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-2xl glass-panel border border-white/10 shadow-xl max-w-full overflow-x-auto">
+                    {/* Previous Button */}
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      aria-label="Previous page"
+                      className="h-8 sm:h-9 px-2 sm:px-3.5 flex items-center justify-center gap-1 text-xs sm:text-sm font-semibold rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all flex-shrink-0"
+                    >
+                      <ChevronLeft size={15} />
+                      <span className="hidden sm:inline">{t("previous")}</span>
+                    </button>
 
-                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                    let page = i + 1;
-                    if (totalPages > 5) {
-                      if (currentPage <= 3) page = i + 1;
-                      else if (currentPage >= totalPages - 2)
-                        page = totalPages - 4 + i;
-                      else page = currentPage - 2 + i;
-                    }
-                    return (
-                      <button
-                        key={page}
-                        onClick={() => handlePageChange(page)}
-                        className={`w-10 h-10 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                          currentPage === page
-                            ? "bg-amber-400 text-black shadow-lg shadow-amber-500/25"
-                            : "bg-white/5 border border-white/10 text-zinc-300 hover:text-white hover:bg-white/10"
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    );
-                  })}
+                    {/* Page Numbers */}
+                    <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+                      {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                        let page = i + 1;
+                        if (totalPages > 5) {
+                          if (currentPage <= 3) page = i + 1;
+                          else if (currentPage >= totalPages - 2)
+                            page = totalPages - 4 + i;
+                          else page = currentPage - 2 + i;
+                        }
+                        const isActive = currentPage === page;
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => handlePageChange(page)}
+                            className={`w-7 h-7 sm:w-9 sm:h-9 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center ${
+                              isActive
+                                ? "bg-amber-400 text-black shadow-md shadow-amber-500/25 scale-105"
+                                : "bg-white/5 hover:bg-white/10 border border-white/5 text-zinc-300 hover:text-white"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      })}
+                    </div>
 
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl bg-white/5 border border-white/10 text-zinc-300 hover:text-white hover:bg-white/10 disabled:opacity-40 transition-all"
-                  >
-                    {t("next")}
-                  </button>
+                    {/* Next Button */}
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      aria-label="Next page"
+                      className="h-8 sm:h-9 px-2 sm:px-3.5 flex items-center justify-center gap-1 text-xs sm:text-sm font-semibold rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all flex-shrink-0"
+                    >
+                      <span className="hidden sm:inline">{t("next")}</span>
+                      <ChevronRight size={15} />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

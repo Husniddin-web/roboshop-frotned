@@ -54,7 +54,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <div className="group relative flex flex-col rounded-2xl overflow-hidden glass-panel border border-white/10 hover:border-amber-400/40 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-amber-500/10">
       {/* Product Image Link */}
-      <Link href={`/products/${product.id}`} className="block relative overflow-hidden bg-zinc-900/80 aspect-[4/3] w-full">
+      <Link href={`/products/${product.id}`} className="block relative overflow-hidden bg-zinc-900/80 aspect-square sm:aspect-[4/3] w-full">
         <Image
           src={
             product.images?.[0]?.url
@@ -63,64 +63,64 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           }
           alt={translation?.name || "Product"}
           fill
-          className="object-contain p-3 group-hover:scale-108 transition-transform duration-500 ease-out"
+          className="object-contain p-2 sm:p-3 group-hover:scale-108 transition-transform duration-500 ease-out"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         {/* Floating In-stock badge */}
-        <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 text-emerald-400 text-[11px] font-medium">
-          <CheckCircle2 size={11} />
+        <div className="absolute top-2 left-2 inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 text-emerald-400 text-[9px] sm:text-[11px] font-medium">
+          <CheckCircle2 size={10} className="sm:w-[11px] sm:h-[11px]" />
           <span>Mavjud</span>
         </div>
       </Link>
 
       {/* Product Info */}
-      <div className="flex flex-col flex-1 p-4 sm:p-5 justify-between">
+      <div className="flex flex-col flex-1 p-2.5 sm:p-4 justify-between">
         <div>
           <Link href={`/products/${product.id}`} className="block group-hover:text-amber-400 transition-colors">
-            <h3 className="font-semibold text-white text-sm sm:text-base leading-snug line-clamp-2 mb-1.5">
+            <h3 className="font-semibold text-white text-xs sm:text-base leading-snug line-clamp-2 mb-1">
               {translation?.name || "Elektron komponent"}
             </h3>
           </Link>
 
-          <p className="text-zinc-400 text-xs line-clamp-2 mb-3 leading-relaxed">
+          <p className="hidden sm:block text-zinc-400 text-xs line-clamp-2 mb-3 leading-relaxed">
             {translation?.description
               ? translation.description.substring(0, 70) + (translation.description.length > 70 ? "..." : "")
               : "Arduino va robototexnika loyihalari uchun mo'ljallangan komponent."}
           </p>
         </div>
 
-        <div>
+        <div className="mt-2">
           {/* Price */}
-          <div className="mb-3">
-            <span className="text-xs text-zinc-400 block mb-0.5">Narxi:</span>
-            <span className="text-lg sm:text-xl font-extrabold text-amber-400 tracking-tight">
+          <div className="mb-2 sm:mb-3">
+            <span className="text-[10px] sm:text-xs text-zinc-400 block mb-0.5">Narxi:</span>
+            <span className="text-xs sm:text-lg lg:text-xl font-extrabold text-amber-400 tracking-tight block truncate">
               {formattedPrice}
             </span>
           </div>
 
           {/* Stepper + Quick Add CTA */}
-          <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+          <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-1.5 sm:gap-2 pt-2 border-t border-white/5">
             {/* Stepper */}
-            <div className="flex items-center bg-zinc-900/90 rounded-lg border border-white/10 p-0.5">
+            <div className="flex items-center justify-between bg-zinc-900/90 rounded-xl border border-white/10 p-0.5">
               <button
                 type="button"
                 onClick={handleDecrement}
-                className="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 rounded transition-colors"
+                className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                 aria-label="Decrease quantity"
               >
-                <Minus size={14} />
+                <Minus size={12} className="sm:w-3.5 sm:h-3.5" />
               </button>
-              <span className="w-6 text-center text-xs font-semibold text-white select-none">
+              <span className="px-1 text-center text-[11px] sm:text-xs font-bold text-white select-none">
                 {quantity}
               </span>
               <button
                 type="button"
                 onClick={handleIncrement}
-                className="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 rounded transition-colors"
+                className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                 aria-label="Increase quantity"
               >
-                <Plus size={14} />
+                <Plus size={12} className="sm:w-3.5 sm:h-3.5" />
               </button>
             </div>
 
@@ -128,9 +128,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             <button
               type="button"
               onClick={handleAddToCart}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black text-xs sm:text-sm font-bold shadow-md shadow-amber-500/20 hover:shadow-amber-500/30 active:scale-95 transition-all duration-200"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black text-[11px] sm:text-sm font-extrabold shadow-md shadow-amber-500/20 active:scale-95 transition-all duration-200"
             >
-              <ShoppingBag size={15} />
+              <ShoppingBag size={13} className="sm:w-3.5 sm:h-3.5 flex-shrink-0" />
               <span className="truncate">{t("add.to.cart")}</span>
             </button>
           </div>
@@ -141,4 +141,5 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 };
 
 export default ProductCard;
+
 
