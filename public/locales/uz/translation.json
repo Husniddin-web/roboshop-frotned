@@ -175,6 +175,12 @@
   "projects.components_title": "Kerakli asosiy komponentlar:",
   "projects.view_parts": "Komponentlarni xarid qilish",
   "projects.get_consultation": "Sxema bo'yicha maslahat olish",
-  "projects.consultation_note": "Loyiha bo'yicha savollaringiz bormi? Muhandisimiz sizga bepul yordam beradi"
+  "projects.consultation_note": "Loyiha bo'yicha savollaringiz bormi? Muhandisimiz sizga bepul yordam beradi",
+  "search.popular": "Ommabop qidiruvlar",
+  "search.view_all": "Barcha natijalarni ko'rish",
+  "search.results_count": "ta mahsulot topildi",
+  "search.no_results": "Mahsulot topilmadi",
+  "search.typing_hint": "Mahsulot nomini yozing..."
 }
+
 

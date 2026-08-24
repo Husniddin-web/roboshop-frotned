@@ -1,41 +1,61 @@
 "use client";
+
 import type React from "react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import { useEffect, useState, useRef } from "react";
 import {
   FiSearch,
   FiShoppingCart,
   FiChevronDown,
   FiMenu,
   FiX,
+  FiArrowLeft,
 } from "react-icons/fi";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/lib/store";
 import { toggleCart } from "@/lib/features/cartSlice";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCategory } from "@/lib/api";
+import { useCategory, useAdminProducts } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { getCategoryIcon } from "@/lib/categoryIcons";
+import {
+  ArrowRight,
+  Sparkles,
+  TrendingUp,
+  PackageSearch,
+  Loader2,
+} from "lucide-react";
 
 const Motion: any = motion;
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
-
+const POPULAR_SEARCHES = [
+  "Arduino Uno",
+  "ESP32",
+  "SG90",
+  "HC-SR04",
+  "L298N",
+  "DHT22",
+  "OLED",
+  "Starter Kit",
+];
 
 function ArduinoLogo() {
   return (
     <Motion.div
       className="flex items-center space-x-2 cursor-pointer"
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
     >
       <Motion.svg
         width="32"
         height="32"
         viewBox="0 0 40 40"
-        className="text-yellow-400 md:w-10 md:h-10"
-        animate={{ rotate: [0, 5, -5, 0] }}
+        className="text-amber-400 md:w-9 md:h-9"
+        animate={{ rotate: [0, 4, -4, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       >
         <Motion.circle
@@ -47,7 +67,7 @@ function ArduinoLogo() {
           strokeWidth="2"
           initial={{ pathLength: 0 }}
           animate={{ pathLength: 1 }}
-          transition={{ duration: 2, ease: "easeInOut" }}
+          transition={{ duration: 1.5, ease: "easeInOut" }}
         />
         <Motion.rect
           x="12"
@@ -56,34 +76,15 @@ function ArduinoLogo() {
           height="8"
           rx="2"
           fill="currentColor"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 1, duration: 0.5 }}
         />
-        <Motion.circle
-          cx="16"
-          cy="20"
-          r="1.5"
-          fill="#000000"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 1.5, duration: 0.3 }}
-        />
-        <Motion.circle
-          cx="24"
-          cy="20"
-          r="1.5"
-          fill="#000000"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 1.7, duration: 0.3 }}
-        />
+        <Motion.circle cx="16" cy="20" r="1.5" fill="#000000" />
+        <Motion.circle cx="24" cy="20" r="1.5" fill="#000000" />
       </Motion.svg>
       <Motion.span
         className="text-lg md:text-xl font-extrabold hidden sm:block tracking-tight text-white"
-        initial={{ opacity: 0, x: -20 }}
+        initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
+        transition={{ duration: 0.4 }}
       >
         Robo<span className="text-amber-400">Shop</span>.uz
       </Motion.span>
@@ -93,9 +94,14 @@ function ArduinoLogo() {
 
 const Header: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
+
+  const desktopSearchRef = useRef<HTMLDivElement>(null);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
 
   const cartItems = useSelector((state: RootState) => state.cart.items);
   const dispatch = useDispatch();
@@ -103,6 +109,7 @@ const Header: React.FC = () => {
   const { data: categories = [] } = useCategory();
 
   const { t, i18n } = useTranslation();
+  const isUz = i18n.language === "uz";
   const currentLanguage = i18n.language;
   const setCurrentLanguage = (lang: string) => i18n.changeLanguage(lang);
   const cartItemsCount = cartItems.reduce(
@@ -111,22 +118,89 @@ const Header: React.FC = () => {
   );
   const queryClient = useQueryClient();
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery.trim());
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Real-time products query
+  const { data: searchProductsData, isLoading: isSearchLoading } =
+    useAdminProducts({
+      search: debouncedQuery,
+      page: 1,
+    });
+
+  const searchResults = debouncedQuery ? searchProductsData?.data || [] : [];
+  const totalResultsFound = searchProductsData?.meta?.total || 0;
+
+  // Invalidate queries on language switch
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ["category"] });
   }, [currentLanguage, queryClient]);
 
-  const handleSearch = (e: React.FormEvent) => {
+  // Click outside listener for desktop search popover
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        desktopSearchRef.current &&
+        !desktopSearchRef.current.contains(event.target as Node)
+      ) {
+        setIsSearchFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Focus mobile input on open
+  useEffect(() => {
+    if (showMobileSearch && mobileInputRef.current) {
+      mobileInputRef.current.focus();
+    }
+  }, [showMobileSearch]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/products?search=${searchQuery.trim()}`);
-      setSearchQuery("");
+      router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+      setIsSearchFocused(false);
       setShowMobileSearch(false);
     }
+  };
+
+  const handleSelectProduct = (productId: string) => {
+    router.push(`/products/${productId}`);
+    setIsSearchFocused(false);
+    setShowMobileSearch(false);
+    setSearchQuery("");
+  };
+
+  const handlePopularSearchClick = (keyword: string) => {
+    setSearchQuery(keyword);
+    setDebouncedQuery(keyword);
+    router.push(`/products?search=${encodeURIComponent(keyword)}`);
+    setIsSearchFocused(false);
+    setShowMobileSearch(false);
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("uz-UZ", {
+      style: "currency",
+      currency: "UZS",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price);
   };
 
   const toggleMobileSearch = () => {
     setShowMobileSearch(!showMobileSearch);
     setShowMobileMenu(false);
+    if (!showMobileSearch) {
+      setSearchQuery("");
+    }
   };
 
   const toggleMobileMenu = () => {
@@ -141,9 +215,7 @@ const Header: React.FC = () => {
 
   return (
     <>
-      <header
-        className="fixed top-0 left-0 right-0 z-50 bg-[#0b0f17]/85 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-black/40"
-      >
+      <header className="fixed top-0 left-0 right-0 z-40 bg-[#0b0f17]/90 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-black/40">
         <div className="max-w-7xl mx-auto px-4 py-3">
           {/* Main header row */}
           <div className="flex items-center justify-between gap-4">
@@ -152,27 +224,173 @@ const Header: React.FC = () => {
               <ArduinoLogo />
             </Link>
 
-            {/* Desktop Search - Hidden on mobile */}
-            <form
-              onSubmit={handleSearch}
-              className="relative w-full max-w-md flex-1 hidden md:block"
+            {/* Desktop Search with Live Dropdown */}
+            <div
+              ref={desktopSearchRef}
+              className="relative w-full max-w-lg flex-1 hidden md:block"
             >
-              <input
-                type="text"
-                placeholder={t("search.placeholder")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 pr-10 rounded-xl border border-white/10 bg-white/5 text-zinc-100 placeholder-zinc-400 focus:outline-none focus:border-amber-400/50 text-sm transition-colors"
-              />
-              <button
-                type="submit"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-400 hover:text-amber-400 transition-colors"
-              >
-                <FiSearch size={16} />
-              </button>
-            </form>
+              <form onSubmit={handleSearchSubmit} className="relative">
+                <input
+                  type="text"
+                  placeholder={t("search.placeholder") || "Arduino, datchik, motorlarni qidirish..."}
+                  value={searchQuery}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-4 pr-10 py-2.5 rounded-xl border border-white/10 bg-white/5 text-zinc-100 placeholder-zinc-400 focus:outline-none focus:border-amber-400/60 focus:bg-white/[0.08] text-sm transition-all shadow-inner"
+                />
+                {searchQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-9 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-white transition-colors"
+                  >
+                    <FiX size={15} />
+                  </button>
+                ) : null}
+                <button
+                  type="submit"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-amber-400 transition-colors"
+                >
+                  <FiSearch size={16} />
+                </button>
+              </form>
 
-            {/* Desktop Navigation - Hidden on mobile */}
+              {/* Desktop Live Search Popover */}
+              <AnimatePresence>
+                {isSearchFocused && (
+                  <Motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute left-0 right-0 top-full mt-2 bg-[#0c101c]/95 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                  >
+                    {/* State 1: Typing & Searching */}
+                    {debouncedQuery.length > 0 ? (
+                      <div className="p-3">
+                        <div className="flex items-center justify-between px-2 pb-2 mb-2 border-b border-white/10 text-xs text-zinc-400">
+                          <span className="flex items-center gap-1.5">
+                            {isSearchLoading ? (
+                              <Loader2 size={13} className="animate-spin text-amber-400" />
+                            ) : (
+                              <Sparkles size={13} className="text-amber-400" />
+                            )}
+                            <span>"{debouncedQuery}" bo'yicha natijalar</span>
+                          </span>
+                          {!isSearchLoading && (
+                            <span className="font-semibold text-amber-400">
+                              {totalResultsFound} {t("search.results_count") || "ta topildi"}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Results list */}
+                        {isSearchLoading ? (
+                          <div className="space-y-2 p-1">
+                            {[...Array(3)].map((_, i) => (
+                              <div
+                                key={i}
+                                className="flex items-center gap-3 p-2 rounded-xl bg-white/5 animate-pulse"
+                              >
+                                <div className="w-11 h-11 rounded-lg bg-white/10 flex-shrink-0" />
+                                <div className="flex-1 space-y-1.5">
+                                  <div className="h-3.5 bg-white/10 rounded w-3/4" />
+                                  <div className="h-3 bg-white/5 rounded w-1/3" />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : searchResults.length > 0 ? (
+                          <div className="space-y-1 max-h-80 overflow-y-auto pr-1">
+                            {searchResults.slice(0, 5).map((product: any) => {
+                              const trans = product.translations?.[0];
+                              const imgUrl = product.images?.[0]?.url
+                                ? `${BASE_URL}/uploads/${product.images[0].url}`
+                                : "/placeholder.svg";
+
+                              return (
+                                <button
+                                  key={product.id}
+                                  type="button"
+                                  onClick={() => handleSelectProduct(product.id)}
+                                  className="w-full flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-white/10 transition-colors text-left group"
+                                >
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-11 h-11 rounded-lg bg-zinc-900 border border-white/10 overflow-hidden relative flex-shrink-0">
+                                      <Image
+                                        src={imgUrl}
+                                        alt={trans?.name || "Product"}
+                                        fill
+                                        className="object-contain p-1"
+                                      />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <h4 className="text-xs sm:text-sm font-semibold text-white group-hover:text-amber-300 transition-colors truncate">
+                                        {trans?.name || "Mahsulot"}
+                                      </h4>
+                                      <span className="text-[11px] text-zinc-400 truncate block">
+                                        {product.category?.translations?.[0]?.name || "Arduino"}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="text-right flex-shrink-0 pl-2">
+                                    <span className="text-xs sm:text-sm font-extrabold text-amber-400">
+                                      {formatPrice(Number(product.price))}
+                                    </span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="py-6 px-4 text-center">
+                            <PackageSearch size={28} className="text-zinc-500 mx-auto mb-2" />
+                            <p className="text-xs text-zinc-400">
+                              {t("search.no_results") || "Mahsulot topilmadi"}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* View all button */}
+                        {searchResults.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleSearchSubmit}
+                            className="w-full mt-2 pt-2.5 pb-1 border-t border-white/10 flex items-center justify-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors"
+                          >
+                            <span>{t("search.view_all") || "Barcha natijalarni ko'rish"} ({totalResultsFound})</span>
+                            <ArrowRight size={13} />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      /* State 2: Empty input -> Popular searches */
+                      <div className="p-4">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">
+                          <TrendingUp size={14} className="text-amber-400" />
+                          <span>{t("search.popular") || "Ommabop qidiruvlar"}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {POPULAR_SEARCHES.map((tag) => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => handlePopularSearchClick(tag)}
+                              className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-amber-400 hover:text-black border border-white/10 text-xs text-zinc-300 transition-all"
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </Motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-3">
               {/* Category dropdown */}
               <div className="relative">
@@ -251,28 +469,30 @@ const Header: React.FC = () => {
               </button>
             </div>
 
-            {/* Mobile buttons */}
+            {/* Mobile Header Buttons */}
             <div className="flex md:hidden items-center gap-2">
               {/* Mobile Search Button */}
               <button
                 onClick={toggleMobileSearch}
-                className={`p-2 rounded transition-colors ${
+                className={`p-2.5 rounded-xl border transition-all ${
                   showMobileSearch
-                    ? "bg-yellow-500/20 text-yellow-300"
-                    : "text-yellow-400 hover:bg-yellow-500/10"
+                    ? "bg-amber-400/20 border-amber-400/40 text-amber-300"
+                    : "bg-white/5 border-white/10 text-amber-400 hover:bg-white/10"
                 }`}
+                aria-label="Search"
               >
-                <FiSearch size={20} />
+                <FiSearch size={18} />
               </button>
 
               {/* Mobile Cart Button */}
               <button
                 onClick={() => dispatch(toggleCart())}
-                className="relative p-2 hover:bg-yellow-500/10 rounded transition-colors"
+                className="relative p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors"
+                aria-label="Cart"
               >
-                <FiShoppingCart size={20} className="text-yellow-400" />
+                <FiShoppingCart size={18} className="text-amber-400" />
                 {cartItemsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 text-xs bg-yellow-400 text-black rounded-full px-1.5 py-0.5 font-semibold">
+                  <span className="absolute -top-1 -right-1 text-[10px] bg-gradient-to-r from-amber-400 to-amber-500 text-black rounded-full px-1.5 py-0.2 font-bold shadow-md">
                     {cartItemsCount}
                   </span>
                 )}
@@ -281,49 +501,200 @@ const Header: React.FC = () => {
               {/* Mobile Menu Button */}
               <button
                 onClick={toggleMobileMenu}
-                className={`p-2 rounded transition-colors ${
+                className={`p-2.5 rounded-xl border transition-colors ${
                   showMobileMenu
-                    ? "bg-yellow-500/20 text-yellow-300"
-                    : "text-yellow-400 hover:bg-yellow-500/10"
+                    ? "bg-white/10 border-white/20 text-white"
+                    : "bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10"
                 }`}
+                aria-label="Menu"
               >
-                {showMobileMenu ? <FiX size={20} /> : <FiMenu size={20} />}
+                {showMobileMenu ? <FiX size={18} /> : <FiMenu size={18} />}
               </button>
             </div>
           </div>
-
-          {/* Mobile Search Bar */}
-          <AnimatePresence>
-            {showMobileSearch && (
-              <Motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="md:hidden mt-3 pt-3 border-t border-yellow-500/20"
-              >
-                <form onSubmit={handleSearch} className="relative">
-                  <input
-                    type="text"
-                    placeholder={t("search.placeholder")}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-2 pr-10 rounded border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 placeholder-yellow-300 focus:outline-none font-mono"
-                    autoFocus
-                  />
-                  <button
-                    type="submit"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-yellow-400 hover:text-yellow-300 transition-colors"
-                  >
-                    <FiSearch size={18} />
-                  </button>
-                </form>
-              </Motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </header>
 
-      {/* Mobile Menu Overlay */}
+      {/* ========================================================================= */}
+      {/* MOBILE FULL-SCREEN LIVE SEARCH OVERLAY */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {showMobileSearch && (
+          <Motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-50 bg-[#070a12] flex flex-col md:hidden"
+          >
+            {/* Top Search Input Bar */}
+            <div className="p-4 border-b border-white/10 flex items-center gap-3 bg-[#0c101c]/95">
+              <button
+                type="button"
+                onClick={() => setShowMobileSearch(false)}
+                className="p-2 rounded-xl bg-white/5 text-zinc-400 hover:text-white"
+                aria-label="Back"
+              >
+                <FiArrowLeft size={20} />
+              </button>
+
+              <form onSubmit={handleSearchSubmit} className="flex-1 relative">
+                <input
+                  ref={mobileInputRef}
+                  type="text"
+                  placeholder={t("search.placeholder") || "Arduino, datchik, motorlar..."}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-amber-400/40 bg-white/5 text-white placeholder-zinc-400 text-sm focus:outline-none focus:border-amber-400"
+                />
+                {searchQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 p-1"
+                  >
+                    <FiX size={16} />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-400"
+                  >
+                    <FiSearch size={16} />
+                  </button>
+                )}
+              </form>
+            </div>
+
+            {/* Mobile Results Area */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {debouncedQuery.length > 0 ? (
+                <div>
+                  <div className="flex items-center justify-between text-xs text-zinc-400 mb-3 px-1">
+                    <span className="flex items-center gap-1.5">
+                      {isSearchLoading ? (
+                        <Loader2 size={13} className="animate-spin text-amber-400" />
+                      ) : (
+                        <Sparkles size={13} className="text-amber-400" />
+                      )}
+                      <span>"{debouncedQuery}" natijalari</span>
+                    </span>
+                    {!isSearchLoading && (
+                      <span className="font-semibold text-amber-400">
+                        {totalResultsFound} ta topildi
+                      </span>
+                    )}
+                  </div>
+
+                  {isSearchLoading ? (
+                    <div className="space-y-2">
+                      {[...Array(4)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 animate-pulse"
+                        >
+                          <div className="w-14 h-14 rounded-xl bg-white/10 flex-shrink-0" />
+                          <div className="flex-1 space-y-2">
+                            <div className="h-4 bg-white/10 rounded w-3/4" />
+                            <div className="h-3 bg-white/5 rounded w-1/3" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    <div className="space-y-2">
+                      {searchResults.map((product: any) => {
+                        const trans = product.translations?.[0];
+                        const imgUrl = product.images?.[0]?.url
+                          ? `${BASE_URL}/uploads/${product.images[0].url}`
+                          : "/placeholder.svg";
+
+                        return (
+                          <button
+                            key={product.id}
+                            type="button"
+                            onClick={() => handleSelectProduct(product.id)}
+                            className="w-full flex items-center justify-between gap-3 p-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 active:scale-98 transition-all text-left"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-14 h-14 rounded-xl bg-zinc-900 border border-white/10 overflow-hidden relative flex-shrink-0">
+                                <Image
+                                  src={imgUrl}
+                                  alt={trans?.name || "Product"}
+                                  fill
+                                  className="object-contain p-1.5"
+                                />
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="text-sm font-bold text-white leading-snug line-clamp-2">
+                                  {trans?.name || "Mahsulot"}
+                                </h4>
+                                <span className="text-xs text-zinc-400 mt-0.5 block">
+                                  {product.category?.translations?.[0]?.name || "Arduino"}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="text-right flex-shrink-0 pl-2">
+                              <span className="text-sm font-extrabold text-amber-400 block">
+                                {formatPrice(Number(product.price))}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+
+                      {/* Mobile View All Button */}
+                      <button
+                        type="button"
+                        onClick={handleSearchSubmit}
+                        className="w-full mt-4 btn btn-primary py-3 text-sm font-bold shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2"
+                      >
+                        <span>{t("search.view_all") || "Barcha natijalarni ko'rish"} ({totalResultsFound})</span>
+                        <ArrowRight size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="py-12 px-4 text-center">
+                      <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-3 text-amber-400">
+                        <PackageSearch size={28} />
+                      </div>
+                      <h4 className="text-sm font-bold text-white mb-1">
+                        {t("search.no_results") || "Mahsulot topilmadi"}
+                      </h4>
+                      <p className="text-xs text-zinc-400 max-w-xs mx-auto mb-4">
+                        Boshqa kalit so'z bilan izlab ko'ring
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Mobile Empty -> Popular Searches */
+                <div>
+                  <div className="flex items-center gap-2 text-xs font-bold text-zinc-400 uppercase tracking-wider mb-4">
+                    <TrendingUp size={15} className="text-amber-400" />
+                    <span>{t("search.popular") || "Ommabop qidiruvlar"}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2.5">
+                    {POPULAR_SEARCHES.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => handlePopularSearchClick(tag)}
+                        className="px-4 py-2 rounded-xl bg-white/5 active:bg-amber-400 active:text-black border border-white/10 text-xs font-medium text-zinc-300 transition-all"
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Menu Drawer */}
       <AnimatePresence>
         {showMobileMenu && (
           <>
@@ -332,7 +703,7 @@ const Header: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 md:hidden"
               onClick={closeMobileMenu}
             />
 
@@ -342,33 +713,28 @@ const Header: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: "100%" }}
               transition={{ type: "tween", duration: 0.3 }}
-              className="fixed top-0 right-0 h-full w-80 max-w-[85vw] z-50 md:hidden flex flex-col"
-              style={{
-                background: "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)",
-              }}
+              className="fixed top-0 right-0 h-full w-80 max-w-[85vw] z-50 md:hidden flex flex-col bg-[#0c101c] border-l border-white/10 shadow-2xl"
             >
-              <div className="p-4 border-b border-yellow-500/20">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-yellow-400 font-bold text-lg font-mono">
-                    Menu
-                  </h2>
-                  <button
-                    onClick={closeMobileMenu}
-                    className="p-2 text-yellow-400 hover:bg-yellow-500/10 rounded transition-colors"
-                  >
-                    <FiX size={20} />
-                  </button>
-                </div>
+              <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                <span className="text-white font-extrabold text-base tracking-tight">
+                  Robo<span className="text-amber-400">Shop</span> Menyusi
+                </span>
+                <button
+                  onClick={closeMobileMenu}
+                  className="p-2 rounded-xl bg-white/5 text-zinc-400 hover:text-white"
+                >
+                  <FiX size={18} />
+                </button>
               </div>
 
-              <div className="p-4 space-y-4 overflow-y-auto flex-1">
+              <div className="p-4 space-y-5 overflow-y-auto flex-1">
                 {/* Categories Section */}
                 <div>
                   <button
                     onClick={() => setShowCategories(!showCategories)}
-                    className="w-full flex items-center justify-between p-3 rounded border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 transition-colors"
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 text-zinc-200 hover:text-amber-400 transition-colors"
                   >
-                    <span className="font-mono font-semibold">
+                    <span className="font-semibold text-sm">
                       {t("categories")}
                     </span>
                     <FiChevronDown
@@ -384,7 +750,7 @@ const Header: React.FC = () => {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="mt-2 space-y-1 overflow-y-auto max-h-[50vh] pr-1"
+                        className="mt-2 space-y-1 overflow-y-auto max-h-[45vh] pr-1"
                       >
                         {categories.map((category: any) => {
                           const rawName = category.translations?.[0]?.name || "Unnamed";
@@ -407,10 +773,10 @@ const Header: React.FC = () => {
 
                 {/* Language Selection */}
                 <div>
-                  <h3 className="text-yellow-400 font-mono font-semibold mb-2">
-                    Language
-                  </h3>
-                  <div className="flex gap-2">
+                  <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">
+                    Til / Язык
+                  </h4>
+                  <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 gap-1">
                     {["uz", "ru"].map((lang) => {
                       const isActive = currentLanguage === lang;
                       return (
@@ -420,13 +786,13 @@ const Header: React.FC = () => {
                             setCurrentLanguage(lang);
                             closeMobileMenu();
                           }}
-                          className={`flex-1 px-4 py-2 rounded border transition-all duration-300 font-semibold text-sm ${
+                          className={`flex-1 py-2 rounded-lg transition-all font-bold text-xs uppercase ${
                             isActive
-                              ? "bg-yellow-400 text-black border-yellow-400"
-                              : "bg-transparent text-yellow-300 border-yellow-300 hover:bg-yellow-400 hover:text-black"
+                              ? "bg-amber-400 text-black shadow-sm"
+                              : "text-zinc-400 hover:text-white"
                           }`}
                         >
-                          {lang.toUpperCase()}
+                          {lang === "uz" ? "O'zbekcha" : "Русский"}
                         </button>
                       );
                     })}
@@ -442,3 +808,4 @@ const Header: React.FC = () => {
 };
 
 export default Header;
+

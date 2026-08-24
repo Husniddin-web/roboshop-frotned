@@ -175,6 +175,12 @@
   "projects.components_title": "Необходимые компоненты:",
   "projects.view_parts": "Купить детали для проекта",
   "projects.get_consultation": "Консультация по схеме",
-  "projects.consultation_note": "Есть вопросы по сборке? Наш инженер бесплатно подскажет и подберет аналоги"
+  "projects.consultation_note": "Есть вопросы по сборке? Наш инженер бесплатно подскажет и подберет аналоги",
+  "search.popular": "Популярные запросы",
+  "search.view_all": "Смотреть все результаты",
+  "search.results_count": "товаров найдено",
+  "search.no_results": "Ничего не найдено",
+  "search.typing_hint": "Введите название товара..."
 }
+
 
