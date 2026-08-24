@@ -54,8 +54,28 @@ export default function AdminDashboard({
 
   useEffect(() => {
     const initialSearch = searchParams.get("search") || "";
-    setSearchInput(initialSearch);
-  }, [searchParams]);
+    if (initialSearch && !searchInput) {
+      setSearchInput(initialSearch);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const currentParams = new URLSearchParams(window.location.search);
+      const currentSearch = currentParams.get("search") || "";
+      if (currentSearch !== searchInput) {
+        if (searchInput) {
+          currentParams.set("search", searchInput);
+        } else {
+          currentParams.delete("search");
+        }
+        const query = currentParams.toString();
+        const newUrl = `${window.location.pathname}${query ? `?${query}` : ""}`;
+        window.history.replaceState(null, "", newUrl);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
@@ -68,16 +88,7 @@ export default function AdminDashboard({
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchInput(value);
-
-    const params = new URLSearchParams(searchParams.toString());
-    if (value) {
-      params.set("search", value);
-    } else {
-      params.delete("search");
-    }
-    router.push(`?${params.toString()}`);
+    setSearchInput(e.target.value);
   };
 
   const tabs = [

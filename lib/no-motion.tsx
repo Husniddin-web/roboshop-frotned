@@ -33,21 +33,33 @@ const sanitizeProps = (props: Record<string, unknown>) => {
   return cleanProps;
 };
 
-const createMotionTag = (tag: any) => {
-  return ({ children, ...props }: Record<string, any>) => {
-    return React.createElement(tag, sanitizeProps(props), children);
-  };
+const tagCache = new Map<string, React.ForwardRefExoticComponent<any>>();
+
+const getOrCreateMotionTag = (tag: string) => {
+  let Component = tagCache.get(tag);
+  if (!Component) {
+    Component = React.forwardRef<any, Record<string, any>>(
+      ({ children, ...props }, ref) => {
+        return React.createElement(tag, { ...sanitizeProps(props), ref }, children);
+      }
+    );
+    Component.displayName = `Motion(${tag})`;
+    tagCache.set(tag, Component);
+  }
+  return Component;
 };
 
 export const motion = new Proxy(
   {},
   {
-    get: (_target, tag: string) => createMotionTag(tag),
+    get: (_target, tag: string) => getOrCreateMotionTag(tag),
   }
 ) as Record<string, React.ComponentType<any>>;
 
-export const AnimatePresence = ({ children, mode }: { children: React.ReactNode; mode?: string }) => (
-  <>{children}</>
-);
-
-
+export const AnimatePresence = ({
+  children,
+  mode,
+}: {
+  children: React.ReactNode;
+  mode?: string;
+}) => <>{children}</>;
