@@ -1,13 +1,9 @@
 "use client";
 
-import type React from "react";
-import { useState, useRef } from "react";
-import { FiUpload, FiX, FiImage } from "react-icons/fi";
+import React, { useState, useRef, DragEvent } from "react";
+import { FiUploadCloud, FiTrash2, FiImage, FiCheckCircle } from "react-icons/fi";
 import { showToast } from "@/lib/toast";
-import { useDeleteImage, useUploadImage } from "@/lib/api";
-import { useDispatch } from "react-redux";
-import { logout } from "@/lib/features/authSlice";
-import { removeAccessToken } from "@/lib/cookies";
+import { useUploadImage, useDeleteImage } from "@/lib/api";
 import { useTranslation } from "react-i18next";
 import { motion } from "@/lib/no-motion";
 
@@ -23,261 +19,230 @@ export default function ImageUpload({
   maxImages = 5,
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
   const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-  const dispatch = useDispatch();
+
   const { mutateAsync: uploadImageMutation } = useUploadImage();
   const { mutateAsync: removeImageMutation } = useDeleteImage();
 
-  const handleFileSelect = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+  const handleFiles = async (files: FileList | File[]) => {
+    const fileArray = Array.from(files).filter((file) =>
+      file.type.startsWith("image/")
+    );
 
-    if (images.length + files.length > maxImages) {
-      showToast.warning(`${t("maximum")} ${maxImages} ${t("images.allowed")}`);
+    if (fileArray.length === 0) {
+      showToast.warning("Iltimos, faqat rasm fayllarini tanlang (JPG, PNG, WEBP)");
+      return;
+    }
+
+    if (images.length + fileArray.length > maxImages) {
+      showToast.warning(`Maksimal ${maxImages} ta rasm yuklash mumkin`);
       return;
     }
 
     setUploading(true);
-    const uploadToastId = showToast.loading(t("uploading.images"));
+    const toastId = showToast.loading("Rasmlar yuklanmoqda...");
 
     try {
       const formData = new FormData();
-      Array.from(files).forEach((file) => {
+      fileArray.forEach((file) => {
         formData.append("files", file);
       });
 
-      const result = await uploadImageMutation(formData);
-      if (result?.status_code === 200) {
-        onImagesChange([...images, ...result.data]);
+      const res = await uploadImageMutation(formData);
+      if (res?.data && Array.isArray(res.data)) {
+        onImagesChange([...images, ...res.data]);
         showToast.update(
-          uploadToastId,
+          toastId,
           "success",
-          `${result.data.length} ${t("images.uploaded.successfully")}`
+          `${res.data.length} ta rasm muvaffaqiyatli yuklandi`
         );
       } else {
-        dispatch(logout());
-        showToast.update(
-          uploadToastId,
-          "error",
-          `${t("upload.failed")}: ${result.error}`
-        );
+        showToast.update(toastId, "error", "Rasmlarni yuklashda xatolik yuz berdi");
       }
     } catch {
-      showToast.update(uploadToastId, "error", t("upload.failed"));
-      dispatch(logout());
-      removeAccessToken();
+      showToast.update(toastId, "error", "Rasmlarni yuklashda xatolik yuz berdi");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      handleFiles(event.target.files);
+    }
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFiles(e.dataTransfer.files);
+    }
+  };
+
   const handleRemoveImage = async (index: number) => {
     const imageToRemove = images[index];
-    const deleteToastId = showToast.loading(t("deleting.image"));
+    // Optimistically remove from form state
+    onImagesChange(images.filter((_, i) => i !== index));
+
     try {
-      const res = await removeImageMutation(imageToRemove);
-      if (res?.status_code === 200) {
-        onImagesChange(images.filter((_, i) => i !== index));
-        showToast.update(
-          deleteToastId,
-          "success",
-          t("image.deleted.successfully")
-        );
-      } else {
-        dispatch(logout());
-        showToast.update(
-          deleteToastId,
-          "error",
-          `${t("delete. failed")}: ${res.error}`
-        );
+      if (imageToRemove) {
+        await removeImageMutation(imageToRemove);
       }
     } catch {
-      dispatch(logout());
-      removeAccessToken();
-      showToast.update(deleteToastId, "error", t("delete.failed"));
+      // Ignored silently as UI state is already updated
     }
   };
 
   return (
     <div className="space-y-4">
-      <label
-        className="block text-sm font-semibold"
-        style={{
-          color: "#ffffff",
-          fontFamily: '"Courier New", "Monaco", "Menlo", monospace',
-          textTransform: "uppercase",
-          letterSpacing: "0.5px",
-        }}
-      >
-        {t("images")} ({images.length}/{maxImages})
-      </label>
-
-      <div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept="image/*"
-          onChange={handleFileSelect}
-          style={{ display: "none" }}
-          disabled={uploading || images.length >= maxImages}
-        />
-
-        <motion.button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading || images.length >= maxImages}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200"
-          style={{
-            background:
-              uploading || images.length >= maxImages
-                ? "rgba(255, 255, 255, 0.03)"
-                : "rgba(255, 255, 255, 0.05)",
-            border: "2px solid rgba(255, 255, 255, 0.1)",
-            color:
-              uploading || images.length >= maxImages ? "#666666" : "#ffffff",
-            cursor:
-              uploading || images.length >= maxImages
-                ? "not-allowed"
-                : "pointer",
-            fontFamily: '"Courier New", "Monaco", "Menlo", monospace',
-            textTransform: "uppercase",
-            letterSpacing: "0.5px",
-            fontWeight: "600",
-          }}
-          whileHover={
-            !uploading && images.length < maxImages
-              ? {
-                  scale: 1.05,
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
-                }
-              : {}
-          }
-          whileTap={
-            !uploading && images.length < maxImages ? { scale: 0.95 } : {}
-          }
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-xs font-semibold text-zinc-400 uppercase tracking-widest font-mono">
+            Mahsulot rasmlari
+          </span>
+          <p className="text-xs text-zinc-500 mt-0.5 font-sans">
+            JPG, PNG yoki WEBP (birinchi rasm asosiy muqova bo'ladi)
+          </p>
+        </div>
+        <span
+          className={`text-xs font-mono px-2.5 py-1 rounded-full border ${
+            images.length >= maxImages
+              ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+              : "bg-white/5 text-zinc-400 border-white/10"
+          }`}
         >
-          {uploading ? (
-            <motion.div
-              style={{
-                width: "16px",
-                height: "16px",
-                border: "2px solid rgba(255, 255, 255, 0.2)",
-                borderTop: "2px solid #ffffff",
-                borderRadius: "50%",
-              }}
-              animate={{ rotate: 360 }}
-              transition={{
-                duration: 1,
-                repeat: Number.POSITIVE_INFINITY,
-                ease: "linear",
-              }}
-            />
-          ) : (
-            <FiUpload size={16} />
-          )}
-          {uploading ? t("uploading") : t("upload.images")}
-        </motion.button>
+          {images.length} / {maxImages}
+        </span>
       </div>
 
-      {images.length > 0 ? (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-            gap: "1rem",
-          }}
-        >
-          {images.map((image, index) => (
-            <motion.div
-              key={index}
-              className="relative rounded-lg overflow-hidden"
-              style={{
-                aspectRatio: "1",
-                border: "2px solid rgba(255, 255, 255, 0.1)",
-                background: "rgba(255, 255, 255, 0.03)",
-              }}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-              whileHover={{ scale: 1.05 }}
-            >
-              <img
-                src={`${BASE_URL}/uploads/${image}`}
-                alt={`Product image ${index + 1}`}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
-              />
+      {/* Hidden File Input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/*"
+        onChange={handleFileSelect}
+        className="hidden"
+        disabled={uploading || images.length >= maxImages}
+      />
 
-              <motion.button
-                type="button"
-                onClick={() => handleRemoveImage(index)}
-                className="absolute top-2 right-2 rounded-full flex items-center justify-center"
-                style={{
-                  background: "rgba(239, 68, 68, 0.8)",
-                  color: "white",
-                  border: "none",
-                  width: "24px",
-                  height: "24px",
-                  cursor: "pointer",
-                }}
-                whileHover={{
-                  scale: 1.1,
-                  backgroundColor: "rgba(239, 68, 68, 1)",
-                }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <FiX size={14} />
-              </motion.button>
-
-              {index === 0 && (
-                <div
-                  className="absolute bottom-2 left-2 px-2 py-1 rounded text-xs font-semibold"
-                  style={{
-                    background: "rgba(0, 0, 0, 0.7)",
-                    color: "white",
-                    fontFamily: '"Courier New", "Monaco", "Menlo", monospace',
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  {t("main")}
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </div>
-      ) : (
+      {/* Dropzone */}
+      {images.length < maxImages && (
         <div
-          className="rounded-lg p-8 text-center"
-          style={{
-            border: "2px dashed rgba(255, 255, 255, 0.2)",
-            background: "rgba(255, 255, 255, 0.03)",
-          }}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => !uploading && fileInputRef.current?.click()}
+          className={`relative group cursor-pointer rounded-2xl border-2 border-dashed p-6 transition-all duration-200 text-center flex flex-col items-center justify-center gap-3 ${
+            isDragOver
+              ? "border-amber-400 bg-amber-400/5 shadow-[0_0_20px_rgba(251,191,36,0.1)]"
+              : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
+          } ${uploading ? "opacity-60 cursor-not-allowed" : ""}`}
         >
-          <FiImage
-            size={48}
-            style={{
-              margin: "0 auto 1rem",
-              color: "#666666",
-            }}
-          />
-          <p
-            style={{
-              color: "#a0a0a0",
-              fontFamily: '"Courier New", "Monaco", "Menlo", monospace',
-            }}
+          <div
+            className={`w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-110 ${
+              isDragOver
+                ? "bg-amber-400 text-black"
+                : "bg-white/5 text-zinc-400 group-hover:text-white"
+            }`}
           >
-            {t("no.images.uploaded")}
-          </p>
+            {uploading ? (
+              <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <FiUploadCloud size={24} />
+            )}
+          </div>
+
+          <div>
+            <p className="text-sm font-medium text-white">
+              {uploading ? (
+                "Rasmlar yuklanmoqda..."
+              ) : (
+                <>
+                  <span className="text-amber-400 underline underline-offset-4 decoration-amber-400/30 group-hover:decoration-amber-400">
+                    Rasm tanlang
+                  </span>{" "}
+                  yoki bu yerga sudrab tashlang
+                </>
+              )}
+            </p>
+            <p className="text-xs text-zinc-500 mt-1">Maksimal hajm: 5MB gacha</p>
+          </div>
+        </div>
+      )}
+
+      {/* Image Preview Grid */}
+      {images.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pt-2">
+          {images.map((image, index) => {
+            const isMain = index === 0;
+            const fullUrl = image.startsWith("http")
+              ? image
+              : `${BASE_URL}/uploads/${image}`;
+
+            return (
+              <div
+                key={image || index}
+                className={`group relative aspect-square rounded-xl overflow-hidden bg-zinc-900 border transition-all ${
+                  isMain
+                    ? "border-amber-400/80 ring-2 ring-amber-400/20"
+                    : "border-white/10 hover:border-white/20"
+                }`}
+              >
+                <img
+                  src={fullUrl}
+                  alt={`Product ${index + 1}`}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    // Fallback if image failed to load
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                />
+
+                {/* Main badge */}
+                {isMain && (
+                  <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400 text-black text-[10px] font-bold font-mono uppercase shadow-md">
+                    <FiCheckCircle size={10} />
+                    <span>Asosiy</span>
+                  </div>
+                )}
+
+                {/* Overlay with Delete button */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveImage(index);
+                    }}
+                    className="p-2 rounded-lg bg-red-500/90 text-white hover:bg-red-500 transition-all hover:scale-110 shadow-lg"
+                    title="Rasmni o'chirish"
+                  >
+                    <FiTrash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

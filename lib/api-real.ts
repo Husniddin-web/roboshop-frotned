@@ -55,7 +55,7 @@ export const adminLogin = async (data: any) => {
 export const uploadImage = async (data: FormData) => {
   try {
     const token = getAccessToken();
-    const res = await instance.post("file/upload", data, {
+    const res = await instance.post("/file/upload", data, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "multipart/form-data",

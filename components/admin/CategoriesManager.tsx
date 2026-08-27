@@ -49,15 +49,13 @@ export default function CategoriesManager({ search }: { search: string }) {
     const deleteToastId = showToast.loading(t("deleting.category"));
     try {
       const res = await deleteCategory({ id: deletingId });
-      if (res?.status == 200) {
+      if (res?.status == 200 || res?.status_code == 200) {
         showToast.update(deleteToastId, "success", t("category.deleted.successfully"));
       } else {
-        dispatch(logout());
-        removeAccessToken();
         showToast.update(deleteToastId, "error", t("delete.failed"));
       }
-    } catch (error) {
-      showToast.update(deleteToastId, "error", t("delete.failed"));
+    } catch (error: any) {
+      showToast.update(deleteToastId, "error", error?.response?.data?.message || t("delete.failed"));
     } finally {
       setShowDeleteConfirm(false);
       setDeletingId(null);
@@ -342,7 +340,7 @@ function CategoryForm({
       } else {
         res = await createCategory({ data: formData });
       }
-      if (res?.status == 200 || res?.status == 201) {
+      if (res?.status == 200 || res?.status == 201 || res?.status_code == 200 || res?.data) {
         showToast.update(
           saveToastId,
           "success",
@@ -351,13 +349,11 @@ function CategoryForm({
             : t("category.created.successfully")
         );
       } else {
-        dispatch(logout());
-        removeAccessToken();
         showToast.update(saveToastId, "error", t("save.failed"));
       }
       onClose();
-    } catch (error) {
-      showToast.update(saveToastId, "error", t("save.failed"));
+    } catch (error: any) {
+      showToast.update(saveToastId, "error", error?.response?.data?.message || t("save.failed"));
     }
   };
 

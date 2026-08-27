@@ -1,19 +1,21 @@
 "use client";
-import { useTranslation } from "react-i18next";
+
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import type { RootState } from "../../lib/store";
+import { useTranslation } from "react-i18next";
+import type { RootState } from "@/lib/store";
 import {
   useCategory,
   useCreateProduct,
   useOneProductForAdmin,
   useUpdateProduct,
-} from "../../lib/api";
-import { useEffect, useState } from "react";
-import { getImageUrl } from "../../lib/getImageUrl";
-import { getInitilizeData } from "../../lib/getInitilizeFormData";
-import { showToast } from "../../lib/toast";
-import { logout } from "../../lib/features/authSlice";
-import { getAccessToken, removeAccessToken } from "../../lib/cookies";
+} from "@/lib/api";
+import { getImageUrl } from "@/lib/getImageUrl";
+import { getInitilizeData } from "@/lib/getInitilizeFormData";
+import { showToast } from "@/lib/toast";
+import { logout } from "@/lib/features/authSlice";
+import { getAccessToken, removeAccessToken } from "@/lib/cookies";
 import { motion, AnimatePresence } from "@/lib/no-motion";
 import ImageUpload from "./ImageUpload";
 import {
@@ -23,31 +25,39 @@ import {
   FiDollarSign,
   FiTag,
   FiCheck,
+  FiInfo,
 } from "react-icons/fi";
-import { useRouter } from "next/navigation";
 
-/* ── Input field helper ─────────────────────────────────── */
-function Field({
+/* ── Minimal Input Field Wrapper ─────────────────────────── */
+function FormField({
   label,
+  required,
+  hint,
   children,
 }: {
   label: string;
+  required?: boolean;
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="space-y-2">
-      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest font-mono">
-        {label}
-      </label>
+      <div className="flex items-center justify-between">
+        <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest font-mono flex items-center gap-1">
+          {label}
+          {required && <span className="text-amber-400 font-bold">*</span>}
+        </label>
+        {hint && <span className="text-[11px] text-zinc-500 font-mono">{hint}</span>}
+      </div>
       {children}
     </div>
   );
 }
 
-const inputCls =
-  "w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-mono text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-400/60 focus:bg-yellow-400/5 focus:shadow-[0_0_0_3px_rgba(250,204,21,0.1)] transition-all";
+const inputStyles =
+  "w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/10 text-white font-mono text-sm placeholder-zinc-600 focus:outline-none focus:border-amber-400/80 focus:bg-amber-400/[0.02] focus:ring-2 focus:ring-amber-400/10 transition-all duration-200";
 
-/* ── Main ProductPageForm ───────────────────────────────── */
+/* ── Main ProductPageForm Component ──────────────────────── */
 export default function ProductPageForm({
   productId,
 }: {
@@ -58,6 +68,7 @@ export default function ProductPageForm({
   const router = useRouter();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
+  // Authentication check
   useEffect(() => {
     const token = getAccessToken();
     if (!token || !isAuthenticated) {
@@ -68,68 +79,43 @@ export default function ProductPageForm({
   }, [isAuthenticated, dispatch, router]);
 
   const isEditing = !!productId;
-  const { data: product, isLoading } = useOneProductForAdmin(productId);
-  const { data: category } = useCategory();
+  const { data: product, isLoading: isProductLoading } =
+    useOneProductForAdmin(productId);
+  const { data: categories, isLoading: isCategoriesLoading } = useCategory();
 
-  /* ── Language tab ─────────────────────────── */
   const [activeLang, setActiveLang] = useState<"uz" | "ru">("uz");
 
   const [formData, setFormData] = useState({
     price: "",
     categoryId: "",
-    isActive: true,
-    images: [] as any[],
+    images: [] as string[],
     translations: [
       { name: "", description: "", languageId: "uz" },
       { name: "", description: "", languageId: "ru" },
     ],
   });
 
+  // Populate data when editing
   useEffect(() => {
-    if (!isLoading && product?.data) {
+    if (!isProductLoading && product?.data) {
       setFormData({
-        price: product.data.price || "",
+        price: product.data.price ? String(product.data.price) : "",
         categoryId: product.data.categoryId || "",
-        isActive: product.data.isActive ?? true,
-        images: getImageUrl(product.data.images),
+        images: getImageUrl(product.data.images) || [],
         translations: getInitilizeData(product.data.translations),
       });
     }
-  }, [isLoading, product]);
+  }, [isProductLoading, product]);
 
   const createMutation = useCreateProduct();
   const updateMutation = useUpdateProduct();
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const toastId = showToast.loading(
-      isEditing ? t("updating.product") : t("creating.product")
-    );
-    try {
-      if (isEditing) {
-        await updateMutation.mutateAsync({ id: productId!, data: formData });
-        showToast.update(toastId, "success", t("product.updated.successfully"));
-      } else {
-        const res = await createMutation.mutateAsync(formData);
-        if (res?.status === 201) {
-          showToast.update(toastId, "success", t("product.created.successfully"));
-        } else {
-          dispatch(logout());
-          removeAccessToken();
-          showToast.update(toastId, "error", t("admin.relogin"));
-          return;
-        }
-      }
-      router.push("/admin/products");
-    } catch {
-      dispatch(logout());
-      removeAccessToken();
-      showToast.update(toastId, "error", t("admin.relogin"));
-    }
-  };
-
-  const setTr = (lang: "uz" | "ru", field: "name" | "description", val: string) => {
+  const setTranslationField = (
+    lang: "uz" | "ru",
+    field: "name" | "description",
+    val: string
+  ) => {
     setFormData((prev) => ({
       ...prev,
       translations: prev.translations.map((tr) =>
@@ -138,302 +124,399 @@ export default function ProductPageForm({
     }));
   };
 
-  const getTr = (lang: "uz" | "ru") =>
+  const getTranslation = (lang: "uz" | "ru") =>
     formData.translations.find((tr) => tr.languageId === lang) || {
       name: "",
       description: "",
       languageId: lang,
     };
 
-  const uzTr = getTr("uz");
-  const ruTr = getTr("ru");
-  const bothFilled = uzTr.name.trim() && ruTr.name.trim();
+  const uzTr = getTranslation("uz");
+  const ruTr = getTranslation("ru");
+  const isValid =
+    (uzTr.name.trim() || ruTr.name.trim()) &&
+    formData.categoryId &&
+    Number(formData.price) > 0;
 
-  if (isLoading && isEditing) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.categoryId) {
+      showToast.warning("Iltimos, mahsulot kategoriyasini tanlang");
+      return;
+    }
+
+    if (!formData.price || Number(formData.price) <= 0) {
+      showToast.warning("Iltimos, to'g'ri narx kiriting");
+      return;
+    }
+
+    if (!uzTr.name.trim() && !ruTr.name.trim()) {
+      showToast.warning("Iltimos, kamida bitta tilda mahsulot nomini kiriting");
+      return;
+    }
+
+    const toastId = showToast.loading(
+      isEditing ? "Mahsulot yangilanmoqda..." : "Mahsulot yaratilmoqda..."
+    );
+
+    try {
+      const parsedPrice = parseFloat(String(formData.price)) || 0;
+
+      if (isEditing) {
+        // Prepare payload strictly according to backend UpdateProductDto
+        const updatePayload = {
+          price: parsedPrice,
+          categoryId: formData.categoryId,
+          images: formData.images,
+          translations: [
+            {
+              productId: productId!,
+              languageId: "uz",
+              name: uzTr.name.trim() || ruTr.name.trim(),
+              description: uzTr.description.trim(),
+            },
+            {
+              productId: productId!,
+              languageId: "ru",
+              name: ruTr.name.trim() || uzTr.name.trim(),
+              description: ruTr.description.trim(),
+            },
+          ],
+        };
+
+        await updateMutation.mutateAsync({
+          id: productId!,
+          data: updatePayload,
+        });
+
+        showToast.update(toastId, "success", "Mahsulot muvaffaqiyatli yangilandi");
+      } else {
+        // Prepare payload strictly according to backend CreateProductDto
+        const createPayload = {
+          price: parsedPrice,
+          categoryId: formData.categoryId,
+          images: formData.images,
+          translations: [
+            {
+              languageId: "uz",
+              name: uzTr.name.trim() || ruTr.name.trim(),
+              description: uzTr.description.trim(),
+            },
+            {
+              languageId: "ru",
+              name: ruTr.name.trim() || uzTr.name.trim(),
+              description: ruTr.description.trim(),
+            },
+          ],
+        };
+
+        const res = await createMutation.mutateAsync(createPayload);
+        if (res?.status === 201 || res?.data) {
+          showToast.update(toastId, "success", "Mahsulot muvaffaqiyatli yaratildi");
+        }
+      }
+
+      router.push("/admin/products");
+    } catch (error: any) {
+      const errMsg =
+        error?.response?.data?.message || "Xatolik yuz berdi. Qaytadan urinib ko'ring";
+      showToast.update(toastId, "error", errMsg);
+    }
+  };
+
+  const formatCurrency = (val: string) => {
+    const num = parseFloat(val);
+    if (isNaN(num)) return "0";
+    return new Intl.NumberFormat("uz-UZ").format(num);
+  };
+
+  if (isProductLoading && isEditing) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs font-mono text-zinc-400">
+            Mahsulot yuklanmoqda...
+          </span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] text-white">
-      {/* ── Top bar ────────────────────────────────────── */}
-      <div className="sticky top-0 z-20 bg-[#0d0d0d]/90 backdrop-blur-xl border-b border-white/8 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+    <div className="min-h-screen bg-[#09090b] text-white selection:bg-amber-400/20 selection:text-amber-400">
+      {/* ── Sticky Top Bar ───────────────────────────────── */}
+      <header className="sticky top-0 z-30 bg-[#09090b]/80 backdrop-blur-xl border-b border-white/10 px-6 py-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <motion.button
+            <button
+              type="button"
               onClick={() => router.push("/admin/products")}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm font-mono"
-              whileTap={{ scale: 0.95 }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/10 transition-all text-xs font-mono"
             >
-              <FiArrowLeft size={18} />
-              <span className="hidden sm:inline">Orqaga</span>
-            </motion.button>
-            <div className="w-px h-6 bg-white/10" />
-            <div className="flex items-center gap-2">
-              <FiPackage size={18} className="text-yellow-400" />
-              <h1 className="text-base font-bold font-mono uppercase tracking-widest text-white">
-                {isEditing ? "Mahsulotni tahrirlash" : "Yangi mahsulot"}
-              </h1>
+              <FiArrowLeft size={14} />
+              <span>Orqaga</span>
+            </button>
+            <div className="w-px h-5 bg-white/10" />
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/20">
+                <FiPackage size={16} />
+              </div>
+              <div>
+                <h1 className="text-sm sm:text-base font-bold font-mono uppercase tracking-wider text-white">
+                  {isEditing ? "Mahsulotni tahrirlash" : "Yangi mahsulot"}
+                </h1>
+                {isEditing && productId && (
+                  <p className="text-[10px] text-zinc-500 font-mono truncate max-w-xs">
+                    ID: {productId}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
-          <motion.button
+          {/* Action Button */}
+          <button
             type="button"
             onClick={handleSubmit as any}
-            disabled={isPending || !bothFilled}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold font-mono transition-all ${
-              isPending || !bothFilled
-                ? "bg-white/5 text-gray-600 cursor-not-allowed"
-                : "bg-yellow-400 text-black hover:bg-yellow-300"
+            disabled={isSubmitting || !isValid}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold font-mono transition-all ${
+              isSubmitting || !isValid
+                ? "bg-white/5 text-zinc-600 border border-white/5 cursor-not-allowed"
+                : "bg-amber-400 text-black hover:bg-amber-300 shadow-lg shadow-amber-400/10 active:scale-95"
             }`}
-            whileTap={!isPending ? { scale: 0.95 } : {}}
           >
-            {isPending ? (
+            {isSubmitting ? (
               <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
             ) : (
-              <FiSave size={16} />
+              <FiSave size={15} />
             )}
-            {isPending ? "Saqlanmoqda..." : isEditing ? "Yangilash" : "Saqlash"}
-          </motion.button>
+            <span>
+              {isSubmitting
+                ? "Saqlanmoqda..."
+                : isEditing
+                ? "Yangilash"
+                : "Saqlash"}
+            </span>
+          </button>
         </div>
-      </div>
+      </header>
 
-      {/* ── Body ────────────────────────────────────────── */}
-      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto px-6 py-8">
+      {/* ── Main Form Body ───────────────────────────────── */}
+      <form onSubmit={handleSubmit} className="max-w-5xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* ── Left column: meta ── */}
-          <div className="lg:col-span-1 space-y-5">
-            {/* Price */}
-            <div className="p-5 rounded-2xl bg-white/3 border border-white/8 space-y-4">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest font-mono">
-                Ma'lumotlar
-              </p>
-              <Field label="Narx (UZS)">
+          {/* ── Left 2 Columns: Multi-language Details ── */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="p-6 rounded-2xl bg-zinc-900/40 border border-white/10 backdrop-blur-sm space-y-6">
+              {/* Language Switcher Tabs */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white/[0.04] border border-white/10">
+                  {(["uz", "ru"] as const).map((lang) => {
+                    const tr = getTranslation(lang);
+                    const isFilled = !!tr.name.trim();
+                    const isActive = activeLang === lang;
+
+                    return (
+                      <button
+                        key={lang}
+                        type="button"
+                        onClick={() => setActiveLang(lang)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold font-mono transition-all ${
+                          isActive
+                            ? "bg-amber-400 text-black shadow-md"
+                            : "text-zinc-400 hover:text-white"
+                        }`}
+                      >
+                        <span>{lang === "uz" ? "🇺🇿 O'zbek" : "🇷🇺 Русский"}</span>
+                        {isFilled && (
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              isActive ? "bg-black" : "bg-emerald-400"
+                            }`}
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-zinc-500">
+                  <FiInfo size={13} />
+                  <span>Kamida bitta til to'ldirilishi kerak</span>
+                </div>
+              </div>
+
+              {/* Translation Inputs */}
+              <AnimatePresence mode="wait">
+                {activeLang === "uz" ? (
+                  <motion.div
+                    key="uz"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.15 }}
+                    className="space-y-5"
+                  >
+                    <FormField
+                      label="Nomi (O'zbekcha)"
+                      required
+                      hint={`${uzTr.name.length} ta belgi`}
+                    >
+                      <input
+                        type="text"
+                        placeholder="Masalan: Arduino Uno R3 DIP"
+                        value={uzTr.name}
+                        onChange={(e) =>
+                          setTranslationField("uz", "name", e.target.value)
+                        }
+                        className={inputStyles}
+                        required
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Tavsifi (O'zbekcha)"
+                      hint="Mahsulot haqida batafsil ma'lumot"
+                    >
+                      <textarea
+                        rows={7}
+                        placeholder="Texnik xususiyatlari, kuchlanish, mikrokontroller turi..."
+                        value={uzTr.description}
+                        onChange={(e) =>
+                          setTranslationField("uz", "description", e.target.value)
+                        }
+                        className={`${inputStyles} resize-none leading-relaxed`}
+                      />
+                    </FormField>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="ru"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.15 }}
+                    className="space-y-5"
+                  >
+                    <FormField
+                      label="Название (Русский)"
+                      hint={`${ruTr.name.length} символов`}
+                    >
+                      <input
+                        type="text"
+                        placeholder="Например: Arduino Uno R3 DIP"
+                        value={ruTr.name}
+                        onChange={(e) =>
+                          setTranslationField("ru", "name", e.target.value)
+                        }
+                        className={inputStyles}
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Описание (Русский)"
+                      hint="Подробное описание товара"
+                    >
+                      <textarea
+                        rows={7}
+                        placeholder="Технические характеристики, рабочее напряжение, интерфейсы..."
+                        value={ruTr.description}
+                        onChange={(e) =>
+                          setTranslationField("ru", "description", e.target.value)
+                        }
+                        className={`${inputStyles} resize-none leading-relaxed`}
+                      />
+                    </FormField>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* ── Right Column: Meta (Price, Category) ── */}
+          <div className="space-y-6">
+            <div className="p-6 rounded-2xl bg-zinc-900/40 border border-white/10 backdrop-blur-sm space-y-5">
+              <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-widest font-mono border-b border-white/10 pb-3">
+                Asosiy ma'lumotlar
+              </h2>
+
+              {/* Price */}
+              <FormField label="Narx (UZS)" required>
                 <div className="relative">
-                  <FiDollarSign
-                    size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-                  />
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 font-mono text-sm">
+                    <FiDollarSign size={16} />
+                  </div>
                   <input
                     type="number"
-                    step="0.01"
+                    step="1"
+                    min="0"
                     required
+                    placeholder="0"
                     value={formData.price}
                     onChange={(e) =>
                       setFormData((p) => ({ ...p, price: e.target.value }))
                     }
-                    placeholder="0.00"
-                    className={`${inputCls} pl-9`}
+                    className={`${inputStyles} pl-9 pr-16`}
                   />
+                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 text-xs font-mono">
+                    UZS
+                  </div>
                 </div>
-              </Field>
+                {formData.price && Number(formData.price) > 0 && (
+                  <p className="text-[11px] font-mono text-amber-400/90 pt-1">
+                    ≈ {formatCurrency(formData.price)} so'm
+                  </p>
+                )}
+              </FormField>
 
-              <Field label="Kategoriya">
+              {/* Category */}
+              <FormField label="Kategoriya" required>
                 <div className="relative">
-                  <FiTag
-                    size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-                  />
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none">
+                    <FiTag size={16} />
+                  </div>
                   <select
                     required
                     value={formData.categoryId}
                     onChange={(e) =>
                       setFormData((p) => ({ ...p, categoryId: e.target.value }))
                     }
-                    className={`${inputCls} pl-9 appearance-none`}
+                    className={`${inputStyles} pl-9 appearance-none cursor-pointer`}
                   >
-                    <option value="" disabled>
-                      Tanlang...
+                    <option value="" disabled className="bg-zinc-900 text-zinc-500">
+                      Kategoriyani tanlang...
                     </option>
-                    {category?.map((cat: any) => (
-                      <option
-                        key={cat.id}
-                        value={cat.id}
-                        style={{ background: "#1a1a1a" }}
-                      >
-                        {cat.translations?.[0]?.name || "Nomsiz"}
-                      </option>
-                    ))}
+                    {categories?.map((cat: any) => {
+                      const catName =
+                        cat.translations?.find(
+                          (t: any) => t.language?.code === "uz"
+                        )?.name ||
+                        cat.translations?.[0]?.name ||
+                        "Nomsiz kategoriya";
+
+                      return (
+                        <option
+                          key={cat.id}
+                          value={cat.id}
+                          className="bg-zinc-900 text-white py-2"
+                        >
+                          {catName}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
-              </Field>
-
-              {/* Active toggle */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest font-mono">
-                  Holati
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData((p) => ({ ...p, isActive: !p.isActive }))
-                  }
-                  className={`relative w-11 h-6 rounded-full transition-colors ${
-                    formData.isActive ? "bg-green-500" : "bg-white/10"
-                  }`}
-                >
-                  <motion.span
-                    className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white flex items-center justify-center shadow"
-                    animate={{ x: formData.isActive ? 20 : 0 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  >
-                    {formData.isActive && (
-                      <FiCheck size={10} className="text-green-600" />
-                    )}
-                  </motion.span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Right column: translations ── */}
-          <div className="lg:col-span-2">
-            <div className="p-6 rounded-2xl bg-white/3 border border-white/8">
-              {/* Tab switcher */}
-              <div className="flex items-center gap-1 mb-6 bg-white/5 rounded-xl p-1 w-fit">
-                {(["uz", "ru"] as const).map((lang) => {
-                  const tr = getTr(lang);
-                  const filled = tr.name.trim();
-                  return (
-                    <button
-                      key={lang}
-                      type="button"
-                      onClick={() => setActiveLang(lang)}
-                      className={`relative flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold font-mono transition-all ${
-                        activeLang === lang
-                          ? "bg-yellow-400 text-black shadow-md"
-                          : "text-gray-400 hover:text-white"
-                      }`}
-                    >
-                      {lang === "uz" ? "🇺🇿 O'zbek" : "🇷🇺 Русский"}
-                      {filled && (
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            activeLang === lang ? "bg-green-700" : "bg-green-500"
-                          }`}
-                        />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* UZ tab */}
-              <AnimatePresence mode="wait">
-                {activeLang === "uz" && (
-                  <motion.div
-                    key="uz"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.18 }}
-                    className="space-y-5"
-                  >
-                    <Field label="Nomi (O'zbek)">
-                      <input
-                        type="text"
-                        required
-                        placeholder="Masalan: Arduino Uno R3"
-                        value={uzTr.name}
-                        onChange={(e) => setTr("uz", "name", e.target.value)}
-                        className={inputCls}
-                      />
-                    </Field>
-                    <Field label="Tavsif (O'zbek)">
-                      <textarea
-                        rows={6}
-                        placeholder="Mahsulot haqida to'liq ma'lumot..."
-                        value={uzTr.description}
-                        onChange={(e) =>
-                          setTr("uz", "description", e.target.value)
-                        }
-                        className={`${inputCls} resize-none`}
-                      />
-                    </Field>
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => setActiveLang("ru")}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white text-sm font-mono transition-colors"
-                      >
-                        Keyingisi: Ruscha →
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* RU tab */}
-                {activeLang === "ru" && (
-                  <motion.div
-                    key="ru"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.18 }}
-                    className="space-y-5"
-                  >
-                    <Field label="Название (Русский)">
-                      <input
-                        type="text"
-                        placeholder="Например: Arduino Uno R3"
-                        value={ruTr.name}
-                        onChange={(e) => setTr("ru", "name", e.target.value)}
-                        className={inputCls}
-                      />
-                    </Field>
-                    <Field label="Описание (Русский)">
-                      <textarea
-                        rows={6}
-                        placeholder="Подробное описание товара..."
-                        value={ruTr.description}
-                        onChange={(e) =>
-                          setTr("ru", "description", e.target.value)
-                        }
-                        className={`${inputCls} resize-none`}
-                      />
-                    </Field>
-                    <div className="flex justify-between">
-                      <button
-                        type="button"
-                        onClick={() => setActiveLang("uz")}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white text-sm font-mono transition-colors"
-                      >
-                        ← O'zbekcha
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Fill indicator */}
-              <div className="mt-6 pt-5 border-t border-white/8 flex items-center gap-4">
-                {(["uz", "ru"] as const).map((lang) => {
-                  const tr = getTr(lang);
-                  const ok = !!tr.name.trim();
-                  return (
-                    <div key={lang} className="flex items-center gap-2">
-                      <span
-                        className={`w-2 h-2 rounded-full ${ok ? "bg-green-500" : "bg-white/15"}`}
-                      />
-                      <span className={`text-xs font-mono ${ok ? "text-green-400" : "text-gray-600"}`}>
-                        {lang === "uz" ? "O'zbek" : "Ruscha"} {ok ? "✓" : "— to'ldirilmagan"}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+              </FormField>
             </div>
           </div>
         </div>
 
-        {/* Images section in full width below the columns grid */}
-        <div className="mt-6 p-6 rounded-2xl bg-white/3 border border-white/8">
+        {/* ── Media Card: Image Upload ── */}
+        <div className="mt-6 p-6 rounded-2xl bg-zinc-900/40 border border-white/10 backdrop-blur-sm">
           <ImageUpload
             images={formData.images}
-            onImagesChange={(imgs: any) =>
+            onImagesChange={(imgs: string[]) =>
               setFormData((p) => ({ ...p, images: imgs }))
             }
             maxImages={5}
@@ -443,4 +526,3 @@ export default function ProductPageForm({
     </div>
   );
 }
-
