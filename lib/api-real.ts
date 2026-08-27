@@ -3,6 +3,15 @@ import instance from "./real-api";
 import { getAccessToken } from "./cookies";
 import { ProductQueryOptions } from "../app/products/interface";
 
+const handleApiError = (error: any, defaultMsg: string) => {
+  if (error?.response?.status === 401) {
+    // Handled globally by Axios response interceptor
+    return;
+  }
+  const msg = error?.response?.data?.message || defaultMsg;
+  toast.error(msg);
+};
+
 export const getAllProducts = async ({
   search,
   category,
@@ -14,16 +23,12 @@ export const getAllProducts = async ({
     if (search) params.append("search", search);
     if (category) params.append("category", category);
     if (page) params.append("page", String(page));
-
     params.append("limit", String(limit || 12));
 
     const res = await instance.get(`/product?${params.toString()}`);
     return res.data;
   } catch (error: any) {
-    console.log(error);
-    toast.error(
-      `${error.response?.data?.message || "Failed to fetch products"}`
-    );
+    handleApiError(error, "Mahsulotlarni yuklashda xatolik yuz berdi");
   }
 };
 
@@ -32,8 +37,7 @@ export const getCategoryPreviews = async () => {
     const res = await instance.get(`/product/previews`);
     return res.data;
   } catch (error: any) {
-    console.error(error);
-    toast.error("Failed to fetch featured products");
+    handleApiError(error, "Top mahsulotlarni yuklashda xatolik yuz berdi");
   }
 };
 
@@ -42,44 +46,40 @@ export const adminLogin = async (data: any) => {
     const res = await instance.post("/auth/login", data);
     return res.data;
   } catch (error: any) {
-    toast.error(`${error.response.data.message}`);
-    console.log(error.response.data.message);
+    const msg = error?.response?.data?.message || "Login yoki parol noto'g'ri";
+    toast.error(msg);
+    throw error;
   }
 };
 
 export const uploadImage = async (data: FormData) => {
   try {
     const token = getAccessToken();
-
     const res = await instance.post("file/upload", data, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "multipart/form-data",
       },
     });
-
     return res.data;
   } catch (error: any) {
-    const errorMessage = error?.response?.data?.message || "Upload failed";
-    toast.error(errorMessage);
-    console.error("Upload error:", errorMessage);
+    handleApiError(error, "Rasm yuklashda xatolik yuz berdi");
+    throw error;
   }
 };
 
 export const removeImage = async (path: string) => {
   try {
     const token = getAccessToken();
-
     const res = await instance.delete(`/file/${path}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
-
     return res.data;
   } catch (error: any) {
-    const errorMessage = error?.response?.data?.message || "Deleted failed";
-    toast.error(errorMessage);
+    handleApiError(error, "Rasmni o'chirishda xatolik yuz berdi");
+    throw error;
   }
 };
 
@@ -88,7 +88,7 @@ export const getAllCategory = async () => {
     const res = await instance.get("/category");
     return res.data.data;
   } catch (error: any) {
-    toast.error(`${error.response.data.message}`);
+    handleApiError(error, "Kategoriyalarni yuklashda xatolik yuz berdi");
   }
 };
 
@@ -100,7 +100,7 @@ export const getAllCategoryForAdmin = async (
   try {
     const token = getAccessToken();
     const res = await instance.get(
-      `/category/admin?search=${search}&page=${page}&limit=${limit}`,
+      `/category/admin?search=${encodeURIComponent(search)}&page=${page}&limit=${limit}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -109,7 +109,7 @@ export const getAllCategoryForAdmin = async (
     );
     return res.data;
   } catch (error: any) {
-    toast.error(`${error.response?.data?.message || "Failed to fetch categories"}`);
+    handleApiError(error, "Kategoriyalarni yuklashda xatolik yuz berdi");
   }
 };
 
@@ -124,7 +124,8 @@ export const createProduct = async (data: any) => {
     });
     return res.data;
   } catch (error: any) {
-    toast.error(`${error.response.data.message}`);
+    handleApiError(error, "Mahsulot yaratishda xatolik yuz berdi");
+    throw error;
   }
 };
 
@@ -137,10 +138,10 @@ export const updateProduct = async (data: any, id: string) => {
         "Content-Type": "application/json",
       },
     });
-    console.log("upload data", data);
     return res.data;
   } catch (error: any) {
-    toast.error(`${error.response.data.message}`);
+    handleApiError(error, "Mahsulotni yangilashda xatolik yuz berdi");
+    throw error;
   }
 };
 
@@ -155,7 +156,8 @@ export const deleteProduct = async (id: string) => {
     });
     return res.data;
   } catch (error: any) {
-    toast.error(`${error.response.data.message}`);
+    handleApiError(error, "Mahsulotni o'chirishda xatolik yuz berdi");
+    throw error;
   }
 };
 
@@ -164,7 +166,7 @@ export const getOneProductById = async (id: string) => {
     const res = await instance.get(`/product/${id}`);
     return res.data;
   } catch (error: any) {
-    toast.error(`${error.response.data.message}`);
+    handleApiError(error, "Mahsulot ma'lumotlarini yuklashda xatolik yuz berdi");
   }
 };
 
@@ -178,14 +180,13 @@ export const getOneProductByIdForAdmin = async (id: string) => {
     });
     return res.data;
   } catch (error: any) {
-    toast.error(`${error.response.data.message}`);
+    handleApiError(error, "Mahsulot ma'lumotlarini yuklashda xatolik yuz berdi");
   }
 };
 
 export const updateCategory = async (data: any, id: string) => {
   try {
     const token = getAccessToken();
-    console.log(data, id);
     const res = await instance.patch(`/category/${id}`, data, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -194,13 +195,13 @@ export const updateCategory = async (data: any, id: string) => {
     });
     return res.data;
   } catch (error: any) {
-    toast.error(`${error.response.data.message}`);
+    handleApiError(error, "Kategoriyani yangilashda xatolik yuz berdi");
+    throw error;
   }
 };
 
 export const createCategory = async (data: any) => {
   try {
-    console.log(data);
     const token = getAccessToken();
     const res = await instance.post(`/category`, data, {
       headers: {
@@ -210,7 +211,8 @@ export const createCategory = async (data: any) => {
     });
     return res.data;
   } catch (error: any) {
-    toast.error(`${error.response.data.message}`);
+    handleApiError(error, "Kategoriya yaratishda xatolik yuz berdi");
+    throw error;
   }
 };
 
@@ -224,7 +226,7 @@ export const getOrderStats = async () => {
     });
     return res.data;
   } catch (error: any) {
-    toast.error(`${error.response.data.message}`);
+    handleApiError(error, "Statistikalarni yuklashda xatolik yuz berdi");
   }
 };
 
@@ -238,7 +240,7 @@ export const getAdminDashboardSummary = async () => {
     });
     return res.data;
   } catch (error: any) {
-    toast.error(`${error.response.data.message}`);
+    handleApiError(error, "Dashboard ma'lumotlarini yuklashda xatolik yuz berdi");
   }
 };
 
@@ -247,7 +249,7 @@ export interface OrderQueryOptions {
   limit?: number;
   search?: string;
   status?: string;
-  date?: string; // Add date filter
+  date?: string;
 }
 
 export const getAllOrders = async (options: OrderQueryOptions = {}) => {
@@ -271,18 +273,19 @@ export const getAllOrders = async (options: OrderQueryOptions = {}) => {
         Authorization: `Bearer ${token}`,
       },
     });
-    console.log(res.data);
     return res.data;
   } catch (error: any) {
-    toast.error(`${error.response.data.message}`);
+    handleApiError(error, "Buyurtmalarni yuklashda xatolik yuz berdi");
   }
 };
+
 export const createOrder = async (data: any) => {
   try {
     const res = await instance.post(`/order`, data);
     return res.data;
   } catch (error: any) {
-    toast.error(`${error.response.data.message}`);
+    handleApiError(error, "Buyurtma berishda xatolik yuz berdi");
+    throw error;
   }
 };
 
@@ -294,7 +297,8 @@ export const deleteOrder = async (id: string) => {
     });
     return res.data;
   } catch (error: any) {
-    toast.error(`${error.response?.data?.message || "O'chirishda xatolik"}`);
+    handleApiError(error, "Buyurtmani o'chirishda xatolik yuz berdi");
+    throw error;
   }
 };
 
@@ -308,7 +312,8 @@ export const updateOrderStatus = async (id: string, status: string) => {
     );
     return res.data;
   } catch (error: any) {
-    toast.error(`${error.response?.data?.message || "Statusni yangilashda xatolik"}`);
+    handleApiError(error, "Statusni yangilashda xatolik yuz berdi");
+    throw error;
   }
 };
 
@@ -320,7 +325,8 @@ export const deleteAllOrders = async () => {
     });
     return res.data;
   } catch (error: any) {
-    toast.error(`${error.response?.data?.message || "Barcha buyurtmalarni o'chirishda xatolik"}`);
+    handleApiError(error, "Barcha buyurtmalarni o'chirishda xatolik yuz berdi");
+    throw error;
   }
 };
 
@@ -335,7 +341,8 @@ export const deleteCategory = async (id: string) => {
     });
     return res.data;
   } catch (error: any) {
-    toast.error(`${error.response.data.message}`);
+    handleApiError(error, "Kategoriyani o'chirishda xatolik yuz berdi");
+    throw error;
   }
 };
 

@@ -1,6 +1,7 @@
 "use client";
 import { useTranslation } from "react-i18next";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import type { RootState } from "../../lib/store";
 import {
   useCategory,
   useCreateProduct,
@@ -12,7 +13,7 @@ import { getImageUrl } from "../../lib/getImageUrl";
 import { getInitilizeData } from "../../lib/getInitilizeFormData";
 import { showToast } from "../../lib/toast";
 import { logout } from "../../lib/features/authSlice";
-import { removeAccessToken } from "../../lib/cookies";
+import { getAccessToken, removeAccessToken } from "../../lib/cookies";
 import { motion, AnimatePresence } from "@/lib/no-motion";
 import ImageUpload from "./ImageUpload";
 import {
@@ -55,6 +56,16 @@ export default function ProductPageForm({
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const router = useRouter();
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token || !isAuthenticated) {
+      removeAccessToken();
+      dispatch(logout());
+      router.replace("/admin");
+    }
+  }, [isAuthenticated, dispatch, router]);
 
   const isEditing = !!productId;
   const { data: product, isLoading } = useOneProductForAdmin(productId);
