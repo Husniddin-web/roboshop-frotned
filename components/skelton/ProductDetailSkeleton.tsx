@@ -2,7 +2,6 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import Cart from "@/components/Cart";
 import { SkeletonBox } from "./SkeletonBox";
 import { SkeletonText } from "./SkeletonText";
 import { SkeletonImage } from "./SkeletonImage";
@@ -76,7 +75,6 @@ export const ProductDetailSkeleton: React.FC = () => {
         </div>
       </main>
       <Footer />
-      <Cart />
     </div>
   );
 };

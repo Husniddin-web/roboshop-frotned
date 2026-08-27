@@ -480,9 +480,9 @@ const Header: React.FC = () => {
               </div>
 
               {/* Cart button */}
-              <button
-                onClick={() => dispatch(toggleCart())}
-                className="relative p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-400/30 rounded-xl transition-all duration-200"
+              <Link
+                href="/cart"
+                className="relative p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-400/30 rounded-xl transition-all duration-200 flex items-center justify-center"
                 title="Savat"
               >
                 <FiShoppingCart size={18} className="text-amber-400" />
@@ -491,7 +491,7 @@ const Header: React.FC = () => {
                     {cartItemsCount}
                   </span>
                 )}
-              </button>
+              </Link>
 
               {/* User Profile / Telegram Login button */}
               {isUserAuth && customerUser ? (

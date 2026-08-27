@@ -2,16 +2,14 @@
 
 import React from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import type { RootState } from "@/lib/store";
-import { setCartOpen } from "@/lib/features/cartSlice";
 import { triggerHaptic } from "@/lib/telegram";
 import { FiHome, FiGrid, FiShoppingCart, FiUser } from "react-icons/fi";
 
 export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const dispatch = useDispatch();
 
   const { items } = useSelector((state: RootState) => state.cart);
   const { isAuthenticated } = useSelector((state: RootState) => state.userAuth);
@@ -23,88 +21,94 @@ export default function BottomNav() {
     return null;
   }
 
-  const handleCartClick = () => {
+  const navItems = [
+    {
+      id: "home",
+      label: "Bosh sahifa",
+      href: "/",
+      icon: FiHome,
+      isActive: pathname === "/",
+    },
+    {
+      id: "products",
+      label: "Katalog",
+      href: "/products",
+      icon: FiGrid,
+      isActive: pathname.startsWith("/products"),
+    },
+    {
+      id: "cart",
+      label: "Savat",
+      href: "/cart",
+      icon: FiShoppingCart,
+      isActive: pathname === "/cart",
+      badge: cartCount > 0 ? cartCount : null,
+    },
+    {
+      id: "profile",
+      label: isAuthenticated ? "Profil" : "Kirish",
+      href: "/profile",
+      icon: FiUser,
+      isActive: pathname === "/profile",
+      dot: isAuthenticated,
+    },
+  ];
+
+  const handleNavClick = (href: string) => {
     triggerHaptic("selection");
-    dispatch(setCartOpen(true));
+    router.push(href);
   };
 
   return (
-    <nav
-      aria-label="Pastki navigatsiya paneli"
-      className="fixed bottom-0 left-0 right-0 z-40 bg-[#0d0f17]/95 backdrop-blur-xl border-t border-white/10 px-4 py-2 flex items-center justify-around md:hidden shadow-[0_-10px_30px_rgba(0,0,0,0.5)]"
-    >
-      {/* 1. Bosh sahifa */}
-      <button
-        type="button"
-        onClick={() => {
-          triggerHaptic("selection");
-          router.push("/");
-        }}
-        className={`flex flex-col items-center gap-1 p-1.5 transition-colors ${
-          pathname === "/" ? "text-amber-400 font-bold" : "text-zinc-400 hover:text-white"
-        }`}
+    <div className="fixed bottom-2.5 left-3 right-3 z-40 max-w-md mx-auto md:hidden pointer-events-auto">
+      <nav
+        aria-label="Pastki navigatsiya paneli"
+        className="bg-[#0b0f19]/90 backdrop-blur-2xl border border-white/15 rounded-3xl p-1.5 flex items-center justify-between shadow-[0_12px_40px_rgba(0,0,0,0.7)]"
       >
-        <FiHome size={20} />
-        <span className="text-[10px] font-mono">Bosh sahifa</span>
-      </button>
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const active = item.isActive;
 
-      {/* 2. Katalog */}
-      <button
-        type="button"
-        onClick={() => {
-          triggerHaptic("selection");
-          router.push("/products");
-        }}
-        className={`flex flex-col items-center gap-1 p-1.5 transition-colors ${
-          pathname.startsWith("/products")
-            ? "text-amber-400 font-bold"
-            : "text-zinc-400 hover:text-white"
-        }`}
-      >
-        <FiGrid size={20} />
-        <span className="text-[10px] font-mono">Katalog</span>
-      </button>
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => handleNavClick(item.href)}
+              className={`relative flex items-center justify-center gap-1.5 py-2 px-3 sm:px-4 rounded-2xl text-xs font-mono transition-all duration-300 select-none ${
+                active
+                  ? "bg-amber-400 text-black font-bold shadow-lg shadow-amber-400/25 scale-[1.03]"
+                  : "text-zinc-400 hover:text-white hover:bg-white/5 font-medium"
+              }`}
+            >
+              <div className="relative flex items-center justify-center">
+                <Icon size={18} />
 
-      {/* 3. Savat */}
-      <button
-        type="button"
-        onClick={handleCartClick}
-        className="flex flex-col items-center gap-1 p-1.5 text-zinc-400 hover:text-white relative transition-colors"
-      >
-        <div className="relative">
-          <FiShoppingCart size={20} />
-          {cartCount > 0 && (
-            <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-amber-400 text-black text-[10px] font-mono font-bold flex items-center justify-center shadow-md animate-pulse">
-              {cartCount}
-            </span>
-          )}
-        </div>
-        <span className="text-[10px] font-mono">Savat</span>
-      </button>
+                {/* Badge for Cart */}
+                {item.badge && !active && (
+                  <span className="absolute -top-2 -right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-amber-400 text-black text-[10px] font-mono font-bold flex items-center justify-center shadow-md animate-pulse">
+                    {item.badge}
+                  </span>
+                )}
+                {item.badge && active && (
+                  <span className="absolute -top-2 -right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-black text-amber-400 text-[10px] font-mono font-bold flex items-center justify-center shadow-md">
+                    {item.badge}
+                  </span>
+                )}
 
-      {/* 4. Profil (Sahifaga o'tish) */}
-      <button
-        type="button"
-        onClick={() => {
-          triggerHaptic("selection");
-          router.push("/profile");
-        }}
-        className={`flex flex-col items-center gap-1 p-1.5 transition-colors ${
-          pathname === "/profile"
-            ? "text-amber-400 font-bold"
-            : "text-zinc-400 hover:text-white"
-        }`}
-      >
-        <div className="relative">
-          <FiUser size={20} />
-          {isAuthenticated && (
-            <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-[#0d0f17]" />
-          )}
-        </div>
-        <span className="text-[10px] font-mono">
-          {isAuthenticated ? "Profil" : "Kirish"}
-        </span>
-      </button>
-    </nav>
+                {/* Dot for Authenticated Profile */}
+                {item.dot && !active && (
+                  <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-[#0b0f19]" />
+                )}
+              </div>
+
+              {/* Label */}
+              <span className={`text-[11px] ${active ? "font-bold" : "font-medium"}`}>
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+    </div>
   );
 }

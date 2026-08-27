@@ -2,7 +2,6 @@
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import Cart from "@/components/Cart";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -538,7 +537,6 @@ export default function HomePage() {
         <LocationAndContact />
       </main>
       <Footer />
-      <Cart />
     </div>
   );
 }

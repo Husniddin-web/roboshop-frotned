@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import Cart from "@/components/Cart";
 import ProductCard from "@/components/ProductCard";
 import { useAdminProducts, useCategory } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
@@ -96,26 +95,28 @@ export default function ProductsPage() {
     <div className="main-electronics-bg min-h-screen flex flex-col justify-between">
       <div>
         <Header />
-        <main className="container px-4 pt-6 md:pt-28 pb-16 relative z-10">
+        <main className="container px-4 pt-5 md:pt-28 pb-24 relative z-10">
           {/* Top Banner / Mobile Filter Toggle */}
-          <div className="flex items-center justify-between gap-4 mb-6 lg:hidden">
+          <div className="flex items-center justify-between gap-3 mb-5 lg:hidden">
             <button
               onClick={() => setIsMobileFilterOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-amber-400/40 text-amber-400 font-semibold text-sm transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/[0.04] border border-white/15 hover:border-amber-400/50 text-white font-mono font-bold text-xs tracking-wider uppercase transition-all shadow-lg active:scale-95"
             >
-              <SlidersHorizontal size={16} />
-              <span>{t("filters")}</span>
+              <SlidersHorizontal size={14} className="text-amber-400" />
+              <span>Filtrlar</span>
               {category && (
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span className="px-1.5 py-0.5 rounded-full bg-amber-400 text-black text-[10px] font-bold">
+                  1
+                </span>
               )}
             </button>
 
             {(search || category) && (
               <button
                 onClick={clearAllFilters}
-                className="text-xs text-zinc-400 hover:text-white underline underline-offset-4"
+                className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-mono text-zinc-400 hover:text-white transition-colors"
               >
-                {t("clear.filters") || "Filtrni tozalash"}
+                {t("clear.filters") || "Tozalash"} ✕
               </button>
             )}
           </div>
@@ -410,7 +411,6 @@ export default function ProductsPage() {
         </main>
       </div>
       <Footer />
-      <Cart />
     </div>
   );
 }

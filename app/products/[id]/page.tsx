@@ -8,7 +8,6 @@ import { addToCart } from "@/lib/features/cartSlice";
 import { useAdminProducts, useProduct } from "@/lib/api";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import Cart from "@/components/Cart";
 import { FiMinus, FiPlus, FiShoppingCart, FiArrowLeft } from "react-icons/fi";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -68,7 +67,6 @@ export default function ProductDetailPage() {
           </div>
         </div>
         <Footer />
-        <Cart />
       </div>
     );
   }
@@ -221,7 +219,6 @@ export default function ProductDetailPage() {
         </div>
       </main>
       <Footer />
-      <Cart />
     </div>
   );
 }
