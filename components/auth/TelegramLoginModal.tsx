@@ -191,62 +191,88 @@ export default function TelegramLoginModal({
 
         {/* Step 1: Identifier Input Form */}
         {step === "identifier" && (
-          <form onSubmit={handleSendOtp} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest font-mono mb-2">
-                Telefon raqam yoki Telegram Username
-              </label>
-              <div className="relative">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500">
-                  <FiPhone size={16} />
-                </div>
-                <input
-                  type="text"
-                  required
-                  autoFocus
-                  placeholder="+998 90 123 45 67 yoki @username"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-mono text-sm placeholder-zinc-600 focus:outline-none focus:border-[#0088cc] focus:ring-2 focus:ring-[#0088cc]/20 transition-all"
-                />
+          <div className="space-y-4">
+            {/* Quick Registration Info Card */}
+            <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-blue-300 font-bold font-mono">
+                  1. Yangi foydalanuvchimisiz?
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-400/20 text-blue-300 font-mono">
+                  Avto-ro'yxat
+                </span>
               </div>
+              <p className="text-[11px] text-zinc-400 leading-normal">
+                Botimizga bir marta <b>/start</b> bosganingizdan so'ng, tizimga parolsiz kira olasiz:
+              </p>
+              <a
+                href={botUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2 px-3 rounded-lg bg-[#229ED9] hover:bg-[#0088cc] text-white font-bold font-mono text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-98"
+              >
+                <FaTelegramPlane size={13} />
+                <span>@robo_shop_uz_bot ga o'tish (/start)</span>
+                <FiExternalLink size={12} />
+              </a>
             </div>
 
-            {/* Not registered alert */}
-            {notRegistered && (
-              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs space-y-2">
-                <p className="font-medium">
-                  Siz hali Telegram botimizdan ro'yxatdan o'tmagansiz!
-                </p>
-                <a
-                  href={botUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400 text-black font-bold font-mono hover:bg-amber-300 transition-colors text-[11px]"
-                >
-                  <span>Botga o'tib /start bosing</span>
-                  <FiExternalLink size={12} />
-                </a>
+            <form onSubmit={handleSendOtp} className="space-y-4 pt-1">
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider font-mono mb-2">
+                  2. Telefon raqam yoki Telegram Username
+                </label>
+                <div className="relative">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500">
+                    <FiPhone size={16} />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="+998 90 123 45 67 yoki @username"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-mono text-sm placeholder-zinc-600 focus:outline-none focus:border-[#0088cc] focus:ring-2 focus:ring-[#0088cc]/20 transition-all"
+                  />
+                </div>
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={isSendingOtp || !identifier.trim()}
-              className={`w-full py-3 px-4 rounded-xl font-bold font-mono text-sm flex items-center justify-center gap-2 transition-all ${
-                isSendingOtp || !identifier.trim()
-                  ? "bg-white/5 text-zinc-500 cursor-not-allowed"
-                  : "bg-gradient-to-r from-[#229ED9] to-[#0088cc] text-white hover:brightness-110 shadow-lg shadow-[#0088cc]/20 active:scale-98"
-              }`}
-            >
-              {isSendingOtp ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <FiSend size={15} />
+              {/* Not registered alert */}
+              {notRegistered && (
+                <div className="p-3.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs space-y-2 animate-in fade-in">
+                  <p className="font-medium">
+                    Ushbu profil bo'yicha bot topilmadi. Iltimos, avval botga /start bosing!
+                  </p>
+                  <a
+                    href={botUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400 text-black font-bold font-mono hover:bg-amber-300 transition-colors text-[11px]"
+                  >
+                    <span>Botga o'tib /start bosing</span>
+                    <FiExternalLink size={12} />
+                  </a>
+                </div>
               )}
-              <span>{isSendingOtp ? "Yuborilmoqda..." : "Kodni olish"}</span>
-            </button>
-          </form>
+
+              <button
+                type="submit"
+                disabled={isSendingOtp || !identifier.trim()}
+                className={`w-full py-3 px-4 rounded-xl font-bold font-mono text-sm flex items-center justify-center gap-2 transition-all ${
+                  isSendingOtp || !identifier.trim()
+                    ? "bg-white/5 text-zinc-500 cursor-not-allowed"
+                    : "bg-amber-400 text-black hover:bg-amber-300 shadow-lg shadow-amber-400/10 active:scale-98"
+                }`}
+              >
+                {isSendingOtp ? (
+                  <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                ) : (
+                  <FiSend size={15} />
+                )}
+                <span>{isSendingOtp ? "Yuborilmoqda..." : "Tasdiqlash kodini olish"}</span>
+              </button>
+            </form>
+          </div>
         )}
 
         {/* Step 2: OTP Code Form */}

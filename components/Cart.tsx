@@ -8,15 +8,25 @@ import {
   setCartOpen,
 } from "@/lib/features/cartSlice";
 import { FiX, FiMinus, FiPlus } from "react-icons/fi";
+import { FaTelegramPlane } from "react-icons/fa";
 import OrderForm from "./OrderForm";
+import TelegramLoginModal from "./auth/TelegramLoginModal";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { triggerHaptic } from "@/lib/telegram";
+import { showToast } from "@/lib/toast";
 
 export default function Cart() {
   const [showOrderForm, setShowOrderForm] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
   const { items, total, isOpen } = useSelector(
     (state: RootState) => state.cart
   );
+  const { isAuthenticated, user } = useSelector(
+    (state: RootState) => state.userAuth
+  );
+
   const dispatch = useDispatch();
   const { t } = useTranslation();
   const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -29,6 +39,18 @@ export default function Cart() {
     }).format(price);
 
   if (!isOpen) return null;
+
+  const handleCheckoutClick = () => {
+    triggerHaptic("selection");
+    if (!isAuthenticated || !user) {
+      showToast.warning(
+        "Buyurtma berish uchun avval Telegram orqali profilingizga kiring"
+      );
+      setShowLoginModal(true);
+      return;
+    }
+    setShowOrderForm(true);
+  };
 
   return (
     <>
@@ -138,12 +160,27 @@ export default function Cart() {
                   <span>{formatPrice(total)}</span>
                 </div>
 
-                <button
-                  onClick={() => setShowOrderForm(true)}
-                  className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-2 px-4 rounded transition-colors"
-                >
-                  {t("order.now")}
-                </button>
+                {!isAuthenticated || !user ? (
+                  <div className="space-y-2">
+                    <button
+                      onClick={handleCheckoutClick}
+                      className="w-full bg-gradient-to-r from-[#229ED9] to-[#0088cc] hover:brightness-110 text-white font-bold font-mono py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#0088cc]/20"
+                    >
+                      <FaTelegramPlane size={16} />
+                      <span>Telegram orqali kirib buyurtma berish</span>
+                    </button>
+                    <p className="text-[11px] text-center text-zinc-400 font-mono">
+                      Buyurtmani rasmiylashtirish uchun Telegram hisobingiz kerak
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleCheckoutClick}
+                    className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 px-4 rounded-xl transition-colors font-mono"
+                  >
+                    {t("order.now")}
+                  </button>
+                )}
               </div>
             </>
           )}
@@ -151,6 +188,11 @@ export default function Cart() {
       </div>
 
       {showOrderForm && <OrderForm onClose={() => setShowOrderForm(false)} />}
+
+      <TelegramLoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+      />
     </>
   );
 }
