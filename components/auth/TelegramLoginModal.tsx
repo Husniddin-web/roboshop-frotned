@@ -33,7 +33,9 @@ export default function TelegramLoginModal({
   const [otpCode, setOtpCode] = useState("");
   const [countdown, setCountdown] = useState(0);
   const [notRegistered, setNotRegistered] = useState(false);
-  const [botUrl, setBotUrl] = useState("https://t.me/roboshop_bot");
+  const defaultBotUsername =
+    process.env.NEXT_PUBLIC_BOT_USERNAME || "robo_shop_uz_bot";
+  const [botUrl, setBotUrl] = useState(`https://t.me/${defaultBotUsername}`);
 
   const { mutateAsync: sendOtp, isPending: isSendingOtp } =
     useSendTelegramOtp();
