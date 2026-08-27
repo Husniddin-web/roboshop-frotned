@@ -161,22 +161,22 @@ export default function Cart() {
                 </div>
 
                 {!isAuthenticated || !user ? (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <button
                       onClick={handleCheckoutClick}
-                      className="w-full bg-gradient-to-r from-[#229ED9] to-[#0088cc] hover:brightness-110 text-white font-bold font-mono py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#0088cc]/20"
+                      className="w-full bg-gradient-to-r from-[#229ED9] to-[#0088cc] hover:brightness-110 text-white font-bold font-mono py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#0088cc]/20 text-sm active:scale-98"
                     >
-                      <FaTelegramPlane size={16} />
-                      <span>Telegram orqali kirib buyurtma berish</span>
+                      <FaTelegramPlane size={15} />
+                      <span>Buyurtma berish</span>
                     </button>
                     <p className="text-[11px] text-center text-zinc-400 font-mono">
-                      Buyurtmani rasmiylashtirish uchun Telegram hisobingiz kerak
+                      (Avval bot orqali ro'yxatdan o'ting)
                     </p>
                   </div>
                 ) : (
                   <button
                     onClick={handleCheckoutClick}
-                    className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 px-4 rounded-xl transition-colors font-mono"
+                    className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 px-4 rounded-xl transition-colors font-mono text-sm active:scale-98"
                   >
                     {t("order.now")}
                   </button>
