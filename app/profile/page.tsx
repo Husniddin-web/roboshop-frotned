@@ -123,7 +123,7 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-[#070a12] text-white">
       <Header />
 
-      <main className="max-w-4xl mx-auto px-4 pt-24 pb-20">
+      <main className="max-w-4xl mx-auto px-4 pt-6 md:pt-24 pb-20">
         {/* Top Breadcrumb */}
         <div className="flex items-center gap-2 mb-6 text-xs font-mono text-zinc-400">
           <Link

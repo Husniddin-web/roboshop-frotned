@@ -31,7 +31,6 @@ import {
 import { FaTelegramPlane } from "react-icons/fa";
 import { FiUser } from "react-icons/fi";
 import TelegramLoginModal from "./auth/TelegramLoginModal";
-import ProfileModal from "./profile/ProfileModal";
 import { isTelegramWebApp } from "@/lib/telegram";
 
 const Motion: any = motion;
@@ -231,16 +230,10 @@ const Header: React.FC = () => {
 
   if (isTMA) {
     return (
-      <>
-        <TelegramLoginModal
-          isOpen={isLoginModalOpen}
-          onClose={() => setIsLoginModalOpen(false)}
-        />
-        <ProfileModal
-          isOpen={isProfileModalOpen}
-          onClose={() => setIsProfileModalOpen(false)}
-        />
-      </>
+      <TelegramLoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+      />
     );
   }
 
@@ -502,9 +495,8 @@ const Header: React.FC = () => {
 
               {/* User Profile / Telegram Login button */}
               {isUserAuth && customerUser ? (
-                <button
-                  type="button"
-                  onClick={() => setIsProfileModalOpen(true)}
+                <Link
+                  href="/profile"
                   className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-400/30 text-zinc-200 transition-all text-xs font-mono"
                 >
                   {customerUser.photoUrl ? (
@@ -521,7 +513,7 @@ const Header: React.FC = () => {
                   <span className="max-w-[100px] truncate font-semibold">
                     {customerUser.firstName || "Profil"}
                   </span>
-                </button>
+                </Link>
               ) : (
                 <button
                   type="button"
@@ -839,12 +831,9 @@ const Header: React.FC = () => {
                 {/* User Profile / Login row in Mobile Menu */}
                 <div className="pt-2 border-t border-white/10">
                   {isUserAuth && customerUser ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeMobileMenu();
-                        setIsProfileModalOpen(true);
-                      }}
+                    <Link
+                      href="/profile"
+                      onClick={closeMobileMenu}
                       className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all text-xs font-mono"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
@@ -865,7 +854,7 @@ const Header: React.FC = () => {
                         </div>
                       </div>
                       <span className="text-[11px] text-amber-400 font-bold">Ochish →</span>
-                    </button>
+                    </Link>
                   ) : (
                     <button
                       type="button"
@@ -886,15 +875,10 @@ const Header: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Telegram Auth Modals */}
+      {/* Telegram Auth Modal */}
       <TelegramLoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
-      />
-
-      <ProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
       />
     </>
   );
