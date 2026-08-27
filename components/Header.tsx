@@ -32,6 +32,7 @@ import { FaTelegramPlane } from "react-icons/fa";
 import { FiUser } from "react-icons/fi";
 import TelegramLoginModal from "./auth/TelegramLoginModal";
 import ProfileModal from "./profile/ProfileModal";
+import { isTelegramWebApp } from "@/lib/telegram";
 
 const Motion: any = motion;
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -113,6 +114,11 @@ const Header: React.FC = () => {
   );
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isTMA, setIsTMA] = useState(false);
+
+  useEffect(() => {
+    setIsTMA(isTelegramWebApp());
+  }, []);
 
   const dispatch = useDispatch();
   const router = useRouter();
@@ -222,6 +228,21 @@ const Header: React.FC = () => {
     setShowMobileMenu(false);
     setShowCategories(false);
   };
+
+  if (isTMA) {
+    return (
+      <>
+        <TelegramLoginModal
+          isOpen={isLoginModalOpen}
+          onClose={() => setIsLoginModalOpen(false)}
+        />
+        <ProfileModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+        />
+      </>
+    );
+  }
 
   return (
     <>

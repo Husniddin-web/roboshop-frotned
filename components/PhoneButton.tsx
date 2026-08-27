@@ -1,13 +1,24 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiPhone, FiX } from "react-icons/fi";
 import { useTranslation } from "react-i18next";
+import { isTelegramWebApp } from "@/lib/telegram";
 
 const PhoneButton: React.FC = () => {
   const [showContact, setShowContact] = useState(false);
+  const [isTMA, setIsTMA] = useState(false);
   const { t } = useTranslation();
+
+  useEffect(() => {
+    setIsTMA(isTelegramWebApp());
+  }, []);
+
+  // Hide completely inside Telegram Mini App
+  if (isTMA) {
+    return null;
+  }
 
   const contactInfo = {
     phone: "+998 91 797 99 92",
@@ -20,13 +31,14 @@ const PhoneButton: React.FC = () => {
 
   return (
     <>
+      {/* Hidden on mobile (md:flex only) to not collide with bottom nav */}
       <button
         onClick={() => setShowContact(true)}
-        className="phone-button"
+        className="phone-button hidden md:flex"
         style={{
           position: "fixed",
-          bottom: "20px",
-          right: "20px",
+          bottom: "24px",
+          right: "24px",
           width: "56px",
           height: "56px",
           borderRadius: "50%",
@@ -35,7 +47,6 @@ const PhoneButton: React.FC = () => {
           border: "2px solid #facc15",
           boxShadow: "0 4px 12px rgba(250, 204, 21, 0.4)",
           cursor: "pointer",
-          display: "flex",
           alignItems: "center",
           justifyContent: "center",
           zIndex: 1000,
@@ -43,6 +54,7 @@ const PhoneButton: React.FC = () => {
           fontSize: "14px",
           fontWeight: "600",
         }}
+        aria-label="Contact Support"
       >
         <FiPhone size={22} />
       </button>

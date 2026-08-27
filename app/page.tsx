@@ -66,7 +66,7 @@ function HeroSection() {
   ];
 
   return (
-    <section className="relative min-h-[92vh] flex items-center justify-center pt-28 pb-16 overflow-hidden">
+    <section className="relative min-h-[85vh] md:min-h-[92vh] flex items-center justify-center pt-8 md:pt-28 pb-16 overflow-hidden">
       {/* Background Ambient Radial Glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-amber-500/10 blur-[150px] pointer-events-none rounded-full" />
       <div className="absolute top-1/3 right-10 w-[400px] h-[400px] bg-cyan-500/5 blur-[130px] pointer-events-none rounded-full" />

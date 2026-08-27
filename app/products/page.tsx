@@ -96,7 +96,7 @@ export default function ProductsPage() {
     <div className="main-electronics-bg min-h-screen flex flex-col justify-between">
       <div>
         <Header />
-        <main className="container px-4 pt-24 md:pt-28 pb-16 relative z-10">
+        <main className="container px-4 pt-6 md:pt-28 pb-16 relative z-10">
           {/* Top Banner / Mobile Filter Toggle */}
           <div className="flex items-center justify-between gap-4 mb-6 lg:hidden">
             <button
