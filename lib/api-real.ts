@@ -354,3 +354,66 @@ export const getLang = async () => {
     console.log(error);
   }
 };
+
+/* ── Telegram WebApp (TMA) & OTP Auth Endpoints ──────────────── */
+
+export const telegramWebAppLoginApi = async (data: {
+  initData?: string;
+  user?: any;
+}) => {
+  try {
+    const res = await instance.post("/auth/telegram/webapp-login", data);
+    return res.data;
+  } catch (error: any) {
+    handleApiError(error, "Telegram orqali kirishda xatolik yuz berdi");
+    throw error;
+  }
+};
+
+export const sendTelegramOtpApi = async (data: { identifier: string }) => {
+  try {
+    const res = await instance.post("/auth/telegram/send-otp", data);
+    return res.data;
+  } catch (error: any) {
+    handleApiError(error, "Kod yuborishda xatolik yuz berdi");
+    throw error;
+  }
+};
+
+export const verifyTelegramOtpApi = async (data: {
+  identifier: string;
+  code: string;
+}) => {
+  try {
+    const res = await instance.post("/auth/telegram/verify-otp", data);
+    return res.data;
+  } catch (error: any) {
+    handleApiError(error, "Kodni tasdiqlashda xatolik yuz berdi");
+    throw error;
+  }
+};
+
+export const getTelegramProfileApi = async (telegramId: string) => {
+  try {
+    const res = await instance.get(`/auth/telegram/me?telegramId=${telegramId}`);
+    return res.data;
+  } catch (error: any) {
+    handleApiError(error, "Profil ma'lumotlarini yuklashda xatolik");
+  }
+};
+
+export const getMyOrdersApi = async (params: {
+  telegramId?: string;
+  phoneNumber?: string;
+}) => {
+  try {
+    const query = new URLSearchParams();
+    if (params.telegramId) query.append("telegramId", params.telegramId);
+    if (params.phoneNumber) query.append("phoneNumber", params.phoneNumber);
+
+    const res = await instance.get(`/order/my-orders?${query.toString()}`);
+    return res.data;
+  } catch (error: any) {
+    handleApiError(error, "Buyurtmalarni yuklashda xatolik yuz berdi");
+  }
+};

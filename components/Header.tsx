@@ -28,6 +28,10 @@ import {
   PackageSearch,
   Loader2,
 } from "lucide-react";
+import { FaTelegramPlane } from "react-icons/fa";
+import { FiUser } from "react-icons/fi";
+import TelegramLoginModal from "./auth/TelegramLoginModal";
+import ProfileModal from "./profile/ProfileModal";
 
 const Motion: any = motion;
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -104,6 +108,12 @@ const Header: React.FC = () => {
   const mobileInputRef = useRef<HTMLInputElement>(null);
 
   const cartItems = useSelector((state: RootState) => state.cart.items);
+  const { isAuthenticated: isUserAuth, user: customerUser } = useSelector(
+    (state: RootState) => state.userAuth
+  );
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
   const dispatch = useDispatch();
   const router = useRouter();
   const { data: categories = [] } = useCategory();
@@ -459,6 +469,7 @@ const Header: React.FC = () => {
               <button
                 onClick={() => dispatch(toggleCart())}
                 className="relative p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-400/30 rounded-xl transition-all duration-200"
+                title="Savat"
               >
                 <FiShoppingCart size={18} className="text-amber-400" />
                 {cartItemsCount > 0 && (
@@ -467,6 +478,39 @@ const Header: React.FC = () => {
                   </span>
                 )}
               </button>
+
+              {/* User Profile / Telegram Login button */}
+              {isUserAuth && customerUser ? (
+                <button
+                  type="button"
+                  onClick={() => setIsProfileModalOpen(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-400/30 text-zinc-200 transition-all text-xs font-mono"
+                >
+                  {customerUser.photoUrl ? (
+                    <img
+                      src={customerUser.photoUrl}
+                      alt={customerUser.firstName || "User"}
+                      className="w-5 h-5 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-amber-400 text-black font-bold flex items-center justify-center text-[10px]">
+                      {(customerUser.firstName?.[0] || "U").toUpperCase()}
+                    </div>
+                  )}
+                  <span className="max-w-[100px] truncate font-semibold">
+                    {customerUser.firstName || "Profil"}
+                  </span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsLoginModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#229ED9]/10 hover:bg-[#229ED9]/20 border border-[#229ED9]/30 text-[#229ED9] hover:text-white transition-all text-xs font-mono font-bold"
+                >
+                  <FaTelegramPlane size={13} />
+                  <span>Kirish</span>
+                </button>
+              )}
             </div>
 
             {/* Mobile Header Buttons */}
@@ -771,38 +815,66 @@ const Header: React.FC = () => {
                   </AnimatePresence>
                 </div>
 
-                {/* Language Selection */}
-                <div>
-                  <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">
-                    Til / Язык
-                  </h4>
-                  <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 gap-1">
-                    {["uz", "ru"].map((lang) => {
-                      const isActive = currentLanguage === lang;
-                      return (
-                        <button
-                          key={lang}
-                          onClick={() => {
-                            setCurrentLanguage(lang);
-                            closeMobileMenu();
-                          }}
-                          className={`flex-1 py-2 rounded-lg transition-all font-bold text-xs uppercase ${
-                            isActive
-                              ? "bg-amber-400 text-black shadow-sm"
-                              : "text-zinc-400 hover:text-white"
-                          }`}
-                        >
-                          {lang === "uz" ? "O'zbekcha" : "Русский"}
-                        </button>
-                      );
-                    })}
-                  </div>
+                {/* User Profile / Login row in Mobile Menu */}
+                <div className="pt-2 border-t border-white/10">
+                  {isUserAuth && customerUser ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMobileMenu();
+                        setIsProfileModalOpen(true);
+                      }}
+                      className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all text-xs font-mono"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {customerUser.photoUrl ? (
+                          <img
+                            src={customerUser.photoUrl}
+                            alt={customerUser.firstName || "User"}
+                            className="w-7 h-7 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-amber-400 text-black font-bold flex items-center justify-center text-xs">
+                            {(customerUser.firstName?.[0] || "U").toUpperCase()}
+                          </div>
+                        )}
+                        <div className="text-left truncate">
+                          <p className="font-bold truncate">{customerUser.firstName}</p>
+                          <p className="text-[10px] text-zinc-500">Mening profilim</p>
+                        </div>
+                      </div>
+                      <span className="text-[11px] text-amber-400 font-bold">Ochish →</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMobileMenu();
+                        setIsLoginModalOpen(true);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-[#229ED9] to-[#0088cc] text-white font-bold font-mono text-xs shadow-lg shadow-[#0088cc]/20 transition-all"
+                    >
+                      <FaTelegramPlane size={15} />
+                      <span>Telegram orqali kirish</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </Motion.div>
           </>
         )}
       </AnimatePresence>
+
+      {/* Telegram Auth Modals */}
+      <TelegramLoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+      />
+
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+      />
     </>
   );
 };

@@ -30,6 +30,11 @@ import {
   deleteOrder,
   updateOrderStatus,
   deleteAllOrders,
+  telegramWebAppLoginApi,
+  sendTelegramOtpApi,
+  verifyTelegramOtpApi,
+  getTelegramProfileApi,
+  getMyOrdersApi,
 } from "./api-real";
 import { ProductQueryOptions } from "../app/products/interface";
 
@@ -387,3 +392,50 @@ export const useDeleteAllOrders = () => {
     },
   });
 };
+
+/* ── Telegram WebApp (TMA) & OTP Hooks ──────────────────────── */
+
+export const useTelegramWebAppLogin = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { initData?: string; user?: any }) =>
+      telegramWebAppLoginApi(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my_orders"] });
+    },
+  });
+};
+
+export const useSendTelegramOtp = () => {
+  return useMutation({
+    mutationFn: (data: { identifier: string }) => sendTelegramOtpApi(data),
+  });
+};
+
+export const useVerifyTelegramOtp = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { identifier: string; code: string }) =>
+      verifyTelegramOtpApi(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my_orders"] });
+    },
+  });
+};
+
+export const useTelegramProfile = (telegramId?: string) => {
+  return useQuery({
+    queryKey: ["telegram_profile", telegramId],
+    queryFn: () => getTelegramProfileApi(telegramId!),
+    enabled: !!telegramId,
+  });
+};
+
+export const useMyOrders = (telegramId?: string, phoneNumber?: string) => {
+  return useQuery({
+    queryKey: ["my_orders", telegramId, phoneNumber],
+    queryFn: () => getMyOrdersApi({ telegramId, phoneNumber }),
+    enabled: !!telegramId || !!phoneNumber,
+  });
+};
+

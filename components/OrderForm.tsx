@@ -11,6 +11,8 @@ import { showToast } from "@/lib/toast";
 import { isValidUzbekPhoneNumber } from "../lib/utils";
 import { useTranslation } from "react-i18next";
 
+import { triggerHaptic } from "@/lib/telegram";
+
 interface OrderFormProps {
   onClose: () => void;
 }
@@ -33,9 +35,13 @@ const UZBEKISTAN_REGIONS = [
 ];
 
 const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
+  const { user: customerUser } = useSelector((state: RootState) => state.userAuth);
+
   const [formData, setFormData] = useState({
-    customer_name: "",
-    phoneNumber: "",
+    customer_name: customerUser?.firstName
+      ? `${customerUser.firstName} ${customerUser.lastName || ""}`.trim()
+      : "",
+    phoneNumber: customerUser?.phoneNumber || "",
     notes: "",
     region: "",
     address: "",
@@ -66,6 +72,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
       const orderData = {
         customer_name: formData.customer_name,
         phoneNumber: formData.phoneNumber,
+        telegramId: customerUser?.telegramId ? String(customerUser.telegramId) : undefined,
         notes: formData.notes,
         address: fullAddress,
         totalAmount: total,
@@ -77,12 +84,14 @@ const OrderForm: React.FC<OrderFormProps> = ({ onClose }) => {
       };
 
       await createOrderMutation.mutateAsync(orderData);
+      triggerHaptic("success");
       dispatch(clearCart());
       dispatch(setCartOpen(false));
       onClose();
 
       showToast.update(orderToastId, "success", t("order.success"));
     } catch (error) {
+      triggerHaptic("error");
       console.error("Error submitting order:", error);
       showToast.update(orderToastId, "error", t("order.error"));
     }
