@@ -93,6 +93,11 @@ export default function Footer() {
                   {t("contact.info") || "Do'kon manzili"}
                 </Link>
               </li>
+              <li>
+                <Link href="/shikoyat" className="hover:text-amber-400 transition-colors">
+                  {isUz ? "Shikoyat va takliflar" : "Жалобы и предложения"}
+                </Link>
+              </li>
             </ul>
           </div>
 

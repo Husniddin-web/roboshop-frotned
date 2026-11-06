@@ -15,13 +15,46 @@ const poppins = Poppins({
   variable: "--font-poppins",
 });
 
+const SITE_URL = "https://roboshop.uz";
+
 export const metadata: Metadata = {
-  title: "Arduino Shop - Electronic Components & Technology",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Arduino Shop - Electronic Components & Technology",
+    template: "%s | Arduino Shop",
+  },
   description:
     "Your one-stop shop for Arduino boards, sensors, modules and electronic components",
   generator: "v0.dev",
+  keywords: [
+    "RoboShop",
+    "Arduino",
+    "Arduino Uno",
+    "ESP32",
+    "sensorlar",
+    "robototexnika",
+    "robot to'plami",
+    "Znatok",
+    "elektronika do'koni Toshkent",
+    "Arduino Ташкент",
+    "робототехника Ташкент",
+  ],
+  applicationName: "RoboShop",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: "RoboShop",
+    locale: "uz_UZ",
+    title: "Arduino Shop - Electronic Components & Technology",
+    description:
+      "Your one-stop shop for Arduino boards, sensors, modules and electronic components",
+    images: [{ url: "/faviicon.png", width: 512, height: 512, alt: "RoboShop" }],
+  },
+  robots: { index: true, follow: true },
   icons: {
     icon: "/faviicon.png",
+    apple: "/faviicon.png",
   },
 };
 
